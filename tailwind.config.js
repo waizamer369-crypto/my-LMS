@@ -5,6 +5,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        voe: {
+          navy: "#1B2A6B",
+          "navy-deep": "#101B4A",
+          gold: "#FDB913",
+          "gold-deep": "#F5871F",
+          sky: "#A9C6E8",
+          "sky-deep": "#6E93C9",
+          cream: "#FBF9F4",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -48,6 +57,10 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      fontFamily: {
+        display: ["Fredoka", "sans-serif"],
+        sans: ["Manrope", "sans-serif"],
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

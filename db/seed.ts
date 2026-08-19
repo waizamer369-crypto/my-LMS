@@ -1,4 +1,4 @@
-import { getDb } from "../api/queries/connection";
+import { db } from "./client";
 import {
   users,
   courses,
@@ -611,7 +611,6 @@ const SEED_COURSES: SeedCourse[] = [
 ];
 
 async function seed() {
-  const db = getDb();
   console.log("Seeding LearnHub database...");
 
   // Instructors (upsert)
@@ -620,7 +619,10 @@ async function seed() {
     await db
       .insert(users)
       .values(inst)
-      .onDuplicateKeyUpdate({ set: { name: inst.name } });
+      .onConflictDoUpdate({
+        target: users.unionId,
+        set: { name: inst.name },
+      });
     const row = await db.query.users.findFirst({
       where: eq(users.unionId, inst.unionId),
     });
@@ -659,7 +661,7 @@ async function seed() {
           instructorId: instructorIds[c.instructorIdx],
           published: true,
         })
-        .$returningId();
+        .returning({ id: courses.id });
       courseId = id;
       console.log(`Created course: ${c.title}`);
     }
@@ -682,7 +684,7 @@ async function seed() {
         title: c.quiz.title,
         passScore: c.quiz.passScore,
       })
-      .$returningId();
+      .returning({ id: quizzes.id });
     await db.insert(quizQuestions).values(
       c.quiz.questions.map((q, i) => ({
         quizId,

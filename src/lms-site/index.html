@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voice of Eden Pakistan — Learn. Rise. Lead.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #1B2A6B;
+    --navy-deep: #101B4A;
+    --gold: #FDB913;
+    --gold-deep: #F5871F;
+    --sky: #A9C6E8;
+    --sky-deep: #6E93C9;
+    --cream: #FBF9F4;
+    --ink: #101B4A;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family:'Manrope', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{ font-family:'Fredoka', sans-serif; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+  }
+
+  a{ text-decoration:none; color:inherit; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 6vw;
+    background:rgba(251,249,244,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(27,42,107,0.08);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand img{ height:38px; width:auto; }
+  .brand span{ font-family:'Fredoka'; font-weight:600; font-size:1.05rem; color:var(--navy); letter-spacing:0.2px; }
+  .nav-links{ display:flex; align-items:center; gap:36px; }
+  .nav-links a{ font-weight:600; font-size:0.95rem; color:var(--navy); position:relative; }
+  .nav-links a::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:2px; background:var(--gold);
+    transition:width .25s ease;
+  }
+  .nav-links a:hover::after{ width:100%; }
+  .nav-cta{
+    background:var(--navy); color:var(--cream); padding:10px 22px; border-radius:999px;
+    font-weight:700; font-size:0.9rem; border:none; transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .nav-cta:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(27,42,107,0.3); }
+  .nav-toggle{ display:none; background:none; border:none; }
+  @media (max-width:860px){
+    .nav-links{ display:none; }
+    .nav-toggle{ display:block; }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, var(--cream) 0%, #F3EFE3 100%);
+    padding:140px 6vw 100px;
+    overflow:hidden;
+  }
+  .hero-inner{
+    display:flex; align-items:center; justify-content:space-between; gap:60px;
+    max-width:1240px; width:100%; margin:0 auto; position:relative; z-index:3;
+  }
+  .hero-copy{ max-width:540px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-weight:700; font-size:0.78rem; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--gold-deep); background:rgba(253,185,19,0.14);
+    padding:7px 14px; border-radius:999px; margin-bottom:22px;
+  }
+  .eyebrow::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--gold-deep); }
+  .hero h1{
+    font-size:clamp(2.4rem, 5.2vw, 3.9rem); line-height:1.05; font-weight:600;
+    color:var(--navy-deep); margin-bottom:22px; letter-spacing:-0.5px;
+  }
+  .hero h1 .rise{
+    background:linear-gradient(100deg, var(--gold-deep), var(--gold) 60%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p{ font-size:1.08rem; line-height:1.65; color:#3a4270; margin-bottom:34px; max-width:460px; }
+  .hero-actions{ display:flex; gap:16px; flex-wrap:wrap; }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--gold), var(--gold-deep));
+    color:var(--navy-deep); font-weight:800; font-size:1rem;
+    padding:15px 30px; border-radius:999px; border:none;
+    box-shadow:0 10px 24px rgba(245,135,31,0.35);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn-primary:hover{ transform:translateY(-3px) scale(1.02); box-shadow:0 14px 30px rgba(245,135,31,0.45); }
+  .btn-secondary{
+    background:transparent; color:var(--navy); font-weight:700; font-size:1rem;
+    padding:15px 26px; border-radius:999px; border:2px solid var(--navy);
+    transition:background .2s ease, color .2s ease;
+  }
+  .btn-secondary:hover{ background:var(--navy); color:var(--cream); }
+
+  .hero-mark{
+    position:relative; width:420px; height:420px; flex-shrink:0;
+  }
+  @media (max-width:960px){ .hero-mark{ width:280px; height:280px; } }
+
+  .sun{
+    position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+    width:180px; height:180px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #FFE59A, var(--gold) 55%, var(--gold-deep) 100%);
+    box-shadow:0 0 0 0 rgba(253,185,19,0.4);
+    animation: sunrise 1.4s cubic-bezier(.2,.8,.2,1) both, pulse-glow 3.5s ease-in-out infinite 1.4s;
+  }
+  @keyframes sunrise{
+    0%{ transform:translate(-50%,10%) scale(0.6); opacity:0; }
+    100%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+  }
+  @keyframes pulse-glow{
+    0%,100%{ box-shadow:0 0 40px 0px rgba(253,185,19,0.35); }
+    50%{ box-shadow:0 0 65px 12px rgba(253,185,19,0.5); }
+  }
+  .triangle{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-42%);
+    width:0; height:0;
+    border-left:130px solid transparent;
+    border-right:130px solid transparent;
+    border-top:230px solid var(--navy);
+    filter:drop-shadow(0 18px 30px rgba(16,27,74,0.35));
+    animation: settle 1.2s cubic-bezier(.2,.8,.2,1) both 0.3s;
+  }
+  @keyframes settle{
+    0%{ opacity:0; transform:translate(-50%,-30%) scale(0.85); }
+    100%{ opacity:1; transform:translate(-50%,-42%) scale(1); }
+  }
+  .dove{
+    position:absolute; width:34px; height:auto; opacity:0;
+    animation: fly 1.6s cubic-bezier(.16,.8,.3,1) forwards;
+  }
+  @keyframes fly{
+    0%{ opacity:0; transform:translate(0,0) scale(0.6) rotate(0deg); }
+    15%{ opacity:1; }
+    100%{ opacity:0.92; transform:var(--end) scale(1) rotate(var(--rot,0deg)); }
+  }
+  .dove:nth-child(1){ top:46%; left:48%; --end: translate(-180px,-150px); animation-delay:.9s; }
+  .dove:nth-child(2){ top:40%; left:52%; --end: translate(-90px,-210px); animation-delay:1.05s; }
+  .dove:nth-child(3){ top:38%; left:56%; --end: translate(20px,-235px); animation-delay:1.2s; }
+  .dove:nth-child(4){ top:44%; left:58%; --end: translate(140px,-190px); animation-delay:1.0s; }
+  .dove:nth-child(5){ top:58%; left:22%; --end: translate(-150px,-40px); animation-delay:1.3s; }
+  .dove:nth-child(6){ top:62%; left:74%; --end: translate(150px,-30px); animation-delay:1.4s; }
+
+  .dove-fly{
+    position:absolute; width:26px; opacity:0.5;
+    animation: drift 14s linear infinite;
+  }
+  @keyframes drift{
+    0%{ transform:translate(-10vw, 0) scale(0.8); opacity:0; }
+    10%{ opacity:0.55; }
+    90%{ opacity:0.4; }
+    100%{ transform:translate(110vw, -60px) scale(1.1); opacity:0; }
+  }
+
+  /* ---------- MARQUEE ---------- */
+  .marquee-wrap{
+    background:var(--navy); padding:18px 0; overflow:hidden;
+    border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .marquee{
+    display:flex; width:max-content; gap:48px; animation:scroll-left 26s linear infinite;
+  }
+  .marquee span{
+    color:var(--sky); font-weight:700; font-size:0.95rem; letter-spacing:0.5px; white-space:nowrap;
+    display:flex; align-items:center; gap:10px;
+  }
+  .marquee span::after{ content:'✦'; color:var(--gold); font-size:0.8rem; }
+  @keyframes scroll-left{
+    from{ transform:translateX(0); } to{ transform:translateX(-50%); }
+  }
+
+  /* ---------- REVEAL ---------- */
+  .reveal{ opacity:0; transform:translateY(26px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* ---------- FEATURES ---------- */
+  .section{ padding:110px 6vw; max-width:1240px; margin:0 auto; }
+  .section-head{ text-align:center; max-width:620px; margin:0 auto 64px; }
+  .section-head .eyebrow{ margin-bottom:16px; }
+  .section-head h2{ font-size:clamp(1.9rem,3.4vw,2.6rem); color:var(--navy-deep); font-weight:600; margin-bottom:14px; }
+  .section-head p{ color:#4a5280; font-size:1.05rem; line-height:1.6; }
+
+  .features{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+  @media (max-width:860px){ .features{ grid-template-columns:1fr; } }
+  .feature-card{
+    background:#fff; border-radius:22px; padding:36px 30px;
+    border:1px solid rgba(27,42,107,0.08);
+    box-shadow:0 4px 18px rgba(16,27,74,0.05);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease;
+  }
+  .feature-card:hover{ transform:translateY(-8px); box-shadow:0 20px 40px rgba(16,27,74,0.12); }
+  .feature-icon{
+    width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+    margin-bottom:22px; font-size:1.5rem;
+  }
+  .feature-icon.gold{ background:linear-gradient(135deg,var(--gold),var(--gold-deep)); }
+  .feature-icon.navy{ background:var(--navy); }
+  .feature-icon.sky{ background:linear-gradient(135deg,var(--sky),var(--sky-deep)); }
+  .feature-card h3{ font-size:1.2rem; color:var(--navy-deep); margin-bottom:10px; font-weight:600; }
+  .feature-card p{ color:#5a6188; font-size:0.96rem; line-height:1.6; }
+
+  /* ---------- STATS ---------- */
+  .stats-section{ background:var(--navy-deep); position:relative; overflow:hidden; }
+  .stats-section::before{
+    content:''; position:absolute; top:-140px; right:-100px; width:380px; height:380px; border-radius:50%;
+    background:radial-gradient(circle, rgba(253,185,19,0.25), transparent 70%);
+  }
+  .stats-inner{ position:relative; z-index:2; padding:100px 6vw; max-width:1100px; margin:0 auto; }
+  .stats-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:30px; text-align:center; }
+  @media (max-width:760px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-num{ font-family:'Fredoka'; font-size:clamp(2.1rem,4vw,3rem); color:var(--gold); font-weight:600; }
+  .stat-label{ color:var(--sky); font-size:0.88rem; margin-top:6px; font-weight:600; letter-spacing:0.3px; }
+
+  /* ---------- CTA ---------- */
+  .cta-section{
+    margin:0 6vw 110px; border-radius:32px; overflow:hidden; position:relative;
+    background:linear-gradient(120deg, var(--navy), #24357f);
+    padding:80px 8vw; text-align:center;
+  }
+  .cta-sun-glow{
+    position:absolute; width:500px; height:500px; border-radius:50%; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(253,185,19,0.28), transparent 65%);
+  }
+  .cta-section h2{ position:relative; font-size:clamp(1.9rem,3.6vw,2.7rem); color:#fff; font-weight:600; margin-bottom:16px; }
+  .cta-section p{ position:relative; color:var(--sky); font-size:1.05rem; margin-bottom:34px; }
+
+  /* ---------- FOOTER ---------- */
+  footer{ padding:50px 6vw 40px; border-top:1px solid rgba(27,42,107,0.1); }
+  .footer-inner{ max-width:1240px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
+  .footer-inner p{ color:#6a7099; font-size:0.88rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <img src="assets/logo.png" alt="Voice of Eden Pakistan" />
+  </div>
+  <div class="nav-links">
+    <a href="#features">Why Us</a>
+    <a href="#courses">Courses</a>
+    <a href="#impact">Impact</a>
+    <a href="#" class="nav-cta">Sign In</a>
+  </div>
+  <button class="nav-toggle" aria-label="Menu">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1B2A6B" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</nav>
+
+<section class="hero">
+  <!-- ambient drifting doves across whole hero -->
+  <svg class="dove-fly" style="top:18%; left:0; animation-delay:0s;" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#A9C6E8"/></svg>
+  <svg class="dove-fly" style="top:70%; left:0; animation-delay:6s;" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#6E93C9"/></svg>
+
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="eyebrow">Community Development with Skills &amp; Education</div>
+      <h1>Learn a skill.<br><span class="rise">Rise with</span> your community.</h1>
+      <p>Voice of Eden Pakistan's learning platform gives you free, practical courses built by and for communities — so every skill you gain lifts the people around you too.</p>
+      <div class="hero-actions">
+        <button class="btn-primary">Start Learning — It's Free</button>
+        <a href="#courses"><button class="btn-secondary">Explore Courses</button></a>
+      </div>
+    </div>
+
+    <div class="hero-mark" aria-hidden="true">
+      <div class="sun"></div>
+      <div class="triangle"></div>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#3B57A6"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#3B57A6"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#3B57A6"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#5872BC"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#A9C6E8"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#A9C6E8"/></svg>
+    </div>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee" id="marquee">
+    <span>Tailoring &amp; Stitching</span>
+    <span>Digital Literacy</span>
+    <span>English Speaking</span>
+    <span>Handicrafts</span>
+    <span>Basic Accounting</span>
+    <span>Health &amp; Hygiene</span>
+    <span>Tailoring &amp; Stitching</span>
+    <span>Digital Literacy</span>
+    <span>English Speaking</span>
+    <span>Handicrafts</span>
+    <span>Basic Accounting</span>
+    <span>Health &amp; Hygiene</span>
+  </div>
+</div>
+
+<section class="section" id="features">
+  <div class="section-head reveal">
+    <div class="eyebrow">Why Voice of Eden</div>
+    <h2>Built for real communities, not just resumes</h2>
+    <p>Every course exists because a community asked for it. No fluff, no paywalls — just skills people can use the same week they learn them.</p>
+  </div>
+  <div class="features">
+    <div class="feature-card reveal">
+      <div class="feature-icon gold"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#101B4A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M4.93 10.93l1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="M19.07 10.93l-1.41 1.41"/><path d="M22 22H1"/><path d="M8 6l4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></div>
+      <h3>Always Free</h3>
+      <p>Every course, every certificate, every mentor session — free, forever. Education shouldn't have a price tag on hope.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon navy"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22.5 21v-2a4 4 0 0 0-3-3.87"/><path d="M15.5 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <h3>Community-Taught</h3>
+      <p>Courses are built with local mentors and community leaders, so what you learn actually fits where you live and work.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon sky"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#101B4A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.4-3.4a6 6 0 0 1-7.3 7.3l-6.6 6.6a2.1 2.1 0 0 1-3-3l6.6-6.6a6 6 0 0 1 7.3-7.3z"/></svg></div>
+      <h3>Skills You Can Use</h3>
+      <p>From tailoring to digital literacy, every lesson ends with something you can do — not just something you know.</p>
+    </div>
+  </div>
+</section>
+
+<section class="stats-section" id="impact">
+  <div class="stats-inner">
+    <div class="section-head reveal" style="margin-bottom:56px;">
+      <div class="eyebrow" style="background:rgba(253,185,19,0.16); color:var(--gold);">Our Impact</div>
+      <h2 style="color:#fff;">Rising together, one skill at a time</h2>
+    </div>
+    <div class="stats-grid">
+      <div class="reveal"><div class="stat-num" data-target="12000">0</div><div class="stat-label">Learners Reached</div></div>
+      <div class="reveal"><div class="stat-num" data-target="48">0</div><div class="stat-label">Free Courses</div></div>
+      <div class="reveal"><div class="stat-num" data-target="120">0</div><div class="stat-label">Community Mentors</div></div>
+      <div class="reveal"><div class="stat-num" data-target="30">0</div><div class="stat-label">Cities in Pakistan</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section reveal" id="courses">
+  <div class="cta-sun-glow"></div>
+  <h2>Your community is waiting for what you'll learn</h2>
+  <p>Join thousands of learners across Pakistan building real skills, together.</p>
+  <button class="btn-primary">Create Your Free Account</button>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Voice of Eden Pakistan" style="height:30px;" />
+    </div>
+    <p>© 2026 Voice of Eden Pakistan. Community Development with Skills &amp; Education.</p>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold:0.15 });
+  revealEls.forEach(el=>io.observe(el));
+
+  // Animated stat counters
+  const counters = document.querySelectorAll('.stat-num');
+  const counterIO = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const el = entry.target;
+        const target = parseInt(el.dataset.target,10);
+        const dur = 1400;
+        const start = performance.now();
+        function tick(now){
+          const p = Math.min((now-start)/dur, 1);
+          const eased = 1 - Math.pow(1-p, 3);
+          el.textContent = Math.floor(eased*target).toLocaleString();
+          if(p<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+        counterIO.unobserve(el);
+      }
+    });
+  }, { threshold:0.4 });
+  counters.forEach(c=>counterIO.observe(c));
+</script>
+
+</body>
+</html>

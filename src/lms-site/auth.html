@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign In or Join — Voice of Eden Pakistan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #1B2A6B;
+    --navy-deep: #101B4A;
+    --gold: #FDB913;
+    --gold-deep: #F5871F;
+    --sky: #A9C6E8;
+    --sky-deep: #6E93C9;
+    --cream: #FBF9F4;
+    --ink: #101B4A;
+    --error: #E0524B;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    font-family:'Manrope', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    background:var(--cream);
+  }
+  h1,h2,.display{ font-family:'Fredoka', sans-serif; }
+  a{ text-decoration:none; color:inherit; }
+  button, input, select{ font-family:inherit; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+  }
+
+  /* ---------- LEFT PANEL (brand / motion) ---------- */
+  .panel{
+    flex:1 1 48%;
+    position:relative;
+    background:linear-gradient(160deg, var(--navy-deep), var(--navy) 60%, #24357f);
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:48px 56px;
+    overflow:hidden;
+    color:#fff;
+  }
+  @media (max-width:900px){ .panel{ display:none; } }
+
+  .panel-glow{
+    position:absolute; width:520px; height:520px; border-radius:50%;
+    left:50%; top:46%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(253,185,19,0.25), transparent 68%);
+    animation: breathe 5s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ opacity:0.7; transform:translate(-50%,-50%) scale(1); }
+    50%{ opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+  }
+
+  .panel-brand{ position:relative; z-index:2; display:flex; align-items:center; gap:10px; }
+  .panel-brand img{ height:34px; }
+  .panel-brand span{ font-family:'Fredoka'; font-weight:600; font-size:1rem; letter-spacing:0.3px; }
+
+  .panel-center{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; text-align:center; }
+
+  .mark{ position:relative; width:220px; height:220px; margin-bottom:40px; }
+  .sun{
+    position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+    width:110px; height:110px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #FFE59A, var(--gold) 55%, var(--gold-deep) 100%);
+    animation: pulse-glow 3.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow{
+    0%,100%{ box-shadow:0 0 30px 0px rgba(253,185,19,0.35); }
+    50%{ box-shadow:0 0 50px 10px rgba(253,185,19,0.5); }
+  }
+  .triangle{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-42%);
+    width:0; height:0;
+    border-left:80px solid transparent;
+    border-right:80px solid transparent;
+    border-top:142px solid var(--navy-deep);
+    filter:drop-shadow(0 12px 20px rgba(0,0,0,0.35));
+  }
+  .dove{
+    position:absolute; width:24px; opacity:0.85;
+    animation: drift-loop 6s ease-in-out infinite;
+  }
+  .dove:nth-child(3){ top:30%; left:30%; animation-delay:0s; }
+  .dove:nth-child(4){ top:22%; left:52%; animation-delay:1.2s; }
+  .dove:nth-child(5){ top:32%; left:68%; animation-delay:0.6s; }
+  @keyframes drift-loop{
+    0%,100%{ transform:translateY(0px); }
+    50%{ transform:translateY(-10px); }
+  }
+
+  .panel-center h2{ font-size:1.7rem; font-weight:600; margin-bottom:12px; max-width:380px; }
+  .panel-center p{ color:var(--sky); font-size:0.98rem; line-height:1.6; max-width:360px; }
+
+  .panel-quote{
+    position:relative; z-index:2;
+    border-left:3px solid var(--gold);
+    padding-left:16px;
+    font-size:0.92rem;
+    color:var(--sky);
+    line-height:1.6;
+  }
+  .panel-quote b{ color:#fff; display:block; margin-bottom:4px; font-family:'Fredoka'; font-weight:500; }
+
+  /* ---------- RIGHT PANEL (form) ---------- */
+  .form-side{
+    flex:1 1 52%;
+    display:flex; align-items:center; justify-content:center;
+    padding:40px 8vw;
+    position:relative;
+  }
+  .form-wrap{ width:100%; max-width:420px; }
+
+  .mobile-brand{ display:none; align-items:center; gap:10px; margin-bottom:36px; }
+  .mobile-brand img{ height:32px; }
+  .mobile-brand span{ font-family:'Fredoka'; font-weight:600; color:var(--navy); }
+  @media (max-width:900px){ .mobile-brand{ display:flex; } }
+
+  .tabs{
+    display:flex; background:#EFEBDD; border-radius:14px; padding:5px; margin-bottom:34px;
+    position:relative;
+  }
+  .tab-highlight{
+    position:absolute; top:5px; left:5px; width:calc(50% - 5px); height:calc(100% - 10px);
+    background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(16,27,74,0.12);
+    transition:transform .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .tabs.signup-active .tab-highlight{ transform:translateX(100%); }
+  .tab-btn{
+    flex:1; z-index:2; background:none; border:none; padding:12px 0; font-weight:700; font-size:0.95rem;
+    color:#8b8f9e; border-radius:10px; transition:color .25s ease;
+  }
+  .tab-btn.active{ color:var(--navy); }
+
+  .form-panel{ display:none; }
+  .form-panel.active{ display:block; animation: fadein .4s ease both; }
+  @keyframes fadein{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+
+  .form-panel h1{ font-size:1.7rem; color:var(--navy-deep); font-weight:600; margin-bottom:6px; }
+  .form-panel > p{ color:#5a6188; font-size:0.94rem; margin-bottom:28px; }
+
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:0.85rem; font-weight:700; color:var(--navy-deep); margin-bottom:7px; }
+  .input-wrap{ position:relative; }
+  .input-wrap input, .input-wrap select{
+    width:100%; padding:13px 16px; border-radius:12px; border:1.6px solid #E3E0D2;
+    background:#fff; font-size:0.96rem; color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease;
+    appearance:none;
+  }
+  .input-wrap input:focus, .input-wrap select:focus{
+    outline:none; border-color:var(--gold-deep); box-shadow:0 0 0 4px rgba(253,185,19,0.16);
+  }
+  .input-wrap.error input{ border-color:var(--error); }
+  .error-msg{ color:var(--error); font-size:0.8rem; margin-top:6px; font-weight:600; display:none; }
+  .input-wrap.error + .error-msg{ display:block; }
+
+  .toggle-eye{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:#8b8f9e; font-size:0.85rem; font-weight:700;
+  }
+
+  .role-select{ display:flex; gap:12px; }
+  .role-option{
+    flex:1; border:1.6px solid #E3E0D2; border-radius:12px; padding:14px; text-align:center;
+    cursor:pointer; transition:border-color .2s ease, background .2s ease, transform .2s ease;
+    background:#fff;
+  }
+  .role-option.selected{ border-color:var(--gold-deep); background:rgba(253,185,19,0.08); transform:translateY(-1px); }
+  .role-option .emoji{ font-size:1.4rem; display:block; margin-bottom:6px; }
+  .role-option .label{ font-weight:700; font-size:0.88rem; color:var(--navy-deep); }
+  .role-option .sub{ font-size:0.74rem; color:#8b8f9e; margin-top:2px; }
+
+  .form-row-between{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; font-size:0.86rem; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; color:#5a6188; }
+  .checkbox-row input{ accent-color: var(--gold-deep); width:16px; height:16px; }
+  .link-gold{ color:var(--gold-deep); font-weight:700; }
+
+  .btn-submit{
+    width:100%; background:linear-gradient(135deg, var(--gold), var(--gold-deep));
+    color:var(--navy-deep); font-weight:800; font-size:1rem; padding:15px 0; border-radius:12px; border:none;
+    box-shadow:0 10px 22px rgba(245,135,31,0.32);
+    transition:transform .2s ease, box-shadow .2s ease;
+    position:relative; overflow:hidden;
+  }
+  .btn-submit:hover{ transform:translateY(-2px); box-shadow:0 14px 28px rgba(245,135,31,0.42); }
+  .btn-submit:active{ transform:translateY(0); }
+
+  .divider{ display:flex; align-items:center; gap:14px; margin:26px 0; color:#a3a7b8; font-size:0.82rem; }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:#E3E0D2; }
+
+  .btn-social{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:12px 0; border-radius:12px; border:1.6px solid #E3E0D2; background:#fff;
+    font-weight:700; font-size:0.9rem; color:var(--navy-deep); margin-bottom:12px;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .btn-social:hover{ border-color:var(--navy); background:#F7F5EE; }
+
+  .switch-line{ text-align:center; margin-top:28px; font-size:0.9rem; color:#5a6188; }
+  .switch-line b{ color:var(--gold-deep); cursor:pointer; }
+
+  /* floating doves ambient on form side */
+  .amb-dove{ position:absolute; width:22px; opacity:0.18; animation: driftv 9s ease-in-out infinite; }
+  .amb-dove.d1{ top:10%; right:6%; animation-delay:0s; }
+  .amb-dove.d2{ bottom:14%; right:12%; animation-delay:2s; }
+  @keyframes driftv{ 0%,100%{ transform:translateY(0) rotate(0deg);} 50%{ transform:translateY(-14px) rotate(-6deg);} }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-glow"></div>
+  <div class="panel-brand">
+    <img src="assets/logo.png" alt="Voice of Eden Pakistan" />
+    <span>Voice of Eden Pakistan</span>
+  </div>
+
+  <div class="panel-center">
+    <div class="mark" aria-hidden="true">
+      <div class="sun"></div>
+      <div class="triangle"></div>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#A9C6E8"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#fff"/></svg>
+      <svg class="dove" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#A9C6E8"/></svg>
+    </div>
+    <h2>Every skill you learn here lifts someone else too.</h2>
+    <p>Join a growing community of learners and mentors across Pakistan building real, usable skills — together.</p>
+  </div>
+
+  <div class="panel-quote">
+    <b>"I learned tailoring here and now I teach three of my neighbors."</b>
+    Amina, Learner — Faisalabad
+  </div>
+</div>
+
+<div class="form-side">
+  <svg class="amb-dove d1" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#1B2A6B"/></svg>
+  <svg class="amb-dove d2" viewBox="0 0 60 40"><path d="M2 20 Q15 2 30 14 Q45 2 58 20 Q45 14 30 22 Q15 14 2 20 Z" fill="#FDB913"/></svg>
+
+  <div class="form-wrap">
+    <div class="mobile-brand">
+      <img src="assets/logo.png" alt="Voice of Eden Pakistan" />
+      <span>Voice of Eden Pakistan</span>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab-highlight"></div>
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Join Us</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="form-panel active" id="panel-login">
+      <h1>Welcome back</h1>
+      <p>Sign in to keep learning where you left off.</p>
+
+      <form onsubmit="return handleSubmit(event,'login')">
+        <div class="field">
+          <label for="login-email">Email</label>
+          <div class="input-wrap">
+            <input type="email" id="login-email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="login-pass">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="login-pass" placeholder="Enter your password" required />
+            <button type="button" class="toggle-eye" onclick="toggleEye('login-pass', this)">Show</button>
+          </div>
+        </div>
+        <div class="form-row-between">
+          <label class="checkbox-row"><input type="checkbox" /> Remember me</label>
+          <a href="#" class="link-gold">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-submit">Sign In</button>
+      </form>
+
+      <div class="divider">or continue with</div>
+      <button class="btn-social">Continue with Google</button>
+
+      <p class="switch-line">New here? <b onclick="switchTab('signup')">Create a free account</b></p>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="form-panel" id="panel-signup">
+      <h1>Start your journey</h1>
+      <p>Free forever. Takes less than a minute.</p>
+
+      <form onsubmit="return handleSubmit(event,'signup')">
+        <div class="field">
+          <label>I'm joining as</label>
+          <div class="role-select">
+            <div class="role-option selected" data-role="learner" onclick="selectRole(this)">
+              <span class="emoji"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101B4A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9.5 12 4.5 2 9.5l10 5 10-5Z"/><path d="M6 11.5v4.5a6 3 0 0 0 12 0v-4.5"/></svg></span>
+              <div class="label">Learner</div>
+              <div class="sub">Take free courses</div>
+            </div>
+            <div class="role-option" data-role="mentor" onclick="selectRole(this)">
+              <span class="emoji"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101B4A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/></svg></span>
+              <div class="label">Mentor</div>
+              <div class="sub">Teach a skill</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="signup-name">Full name</label>
+          <div class="input-wrap">
+            <input type="text" id="signup-name" placeholder="Your full name" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="signup-email">Email</label>
+          <div class="input-wrap">
+            <input type="email" id="signup-email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="signup-city">City</label>
+          <div class="input-wrap">
+            <select id="signup-city" required>
+              <option value="" disabled selected>Select your city</option>
+              <option>Karachi</option>
+              <option>Lahore</option>
+              <option>Islamabad</option>
+              <option>Faisalabad</option>
+              <option>Peshawar</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="signup-pass">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="signup-pass" placeholder="Create a password" minlength="6" required />
+            <button type="button" class="toggle-eye" onclick="toggleEye('signup-pass', this)">Show</button>
+          </div>
+        </div>
+
+        <div class="form-row-between" style="margin-bottom:20px;">
+          <label class="checkbox-row"><input type="checkbox" required /> I agree to the Terms &amp; Privacy Policy</label>
+        </div>
+        <button type="submit" class="btn-submit">Create Free Account</button>
+      </form>
+
+      <p class="switch-line">Already have an account? <b onclick="switchTab('login')">Sign in</b></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(which){
+    const tabs = document.getElementById('tabs');
+    document.getElementById('tab-login').classList.toggle('active', which==='login');
+    document.getElementById('tab-signup').classList.toggle('active', which==='signup');
+    document.getElementById('panel-login').classList.toggle('active', which==='login');
+    document.getElementById('panel-signup').classList.toggle('active', which==='signup');
+    tabs.classList.toggle('signup-active', which==='signup');
+  }
+
+  function toggleEye(id, btn){
+    const input = document.getElementById(id);
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    btn.textContent = isPass ? 'Hide' : 'Show';
+  }
+
+  function selectRole(el){
+    document.querySelectorAll('.role-option').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function handleSubmit(e, kind){
+    e.preventDefault();
+    const btn = e.target.querySelector('.btn-submit');
+    const original = btn.textContent;
+    btn.textContent = kind === 'login' ? 'Signing in…' : 'Creating account…';
+    btn.style.opacity = '0.75';
+    setTimeout(()=>{
+      btn.textContent = original;
+      btn.style.opacity = '1';
+      alert((kind==='login' ? 'Sign in' : 'Sign up') + ' submitted — connect this to your backend/API to go live.');
+    }, 900);
+    return false;
+  }
+</script>
+
+</body>
+</html>
