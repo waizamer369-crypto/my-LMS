@@ -1,5 +1,15 @@
 import { handle } from "hono/vercel";
-import app from "../server/app.js";
 
 export const config = { runtime: "nodejs" };
-export default handle(app);
+
+export default handle(async (c) => {
+  try {
+    const { default: app } = await import("../server/app.js");
+    return app.fetch(c.req.raw, c.env);
+  } catch (err: any) {
+    return c.json(
+      { error: "Module load failed", message: err.message, stack: err.stack },
+      500
+    );
+  }
+});
