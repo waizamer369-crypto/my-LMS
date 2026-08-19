@@ -2,17 +2,15 @@ import * as cookie from "cookie";
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { SignJWT, jwtVerify } from "jose";
-import { Session } from "@contracts/constants";
-import { db } from "@db/client";
-import { users } from "@db/schema";
+import { Session } from "../../contracts/constants.js";
+import { db } from "../../db/client.js";
+import { users } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
-import type { User } from "@db/schema";
-import { env } from "./env";
+import type { User } from "../../db/schema.js";
+import { env } from "./env.js";
 
 const scrypt = promisify(scryptCallback);
 const secretKey = new TextEncoder().encode(env.jwtSecret);
-
-// ---------- Password hashing (scrypt, no extra dependency needed) ----------
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
@@ -31,8 +29,6 @@ export async function verifyPassword(
   if (storedBuffer.length !== derivedKey.length) return false;
   return timingSafeEqual(storedBuffer, derivedKey);
 }
-
-// ---------- JWT session tokens ----------
 
 export async function createSessionToken(userId: number): Promise<string> {
   return new SignJWT({ sub: String(userId) })

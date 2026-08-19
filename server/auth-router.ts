@@ -2,12 +2,12 @@ import { z } from "zod";
 import * as cookie from "cookie";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
-import { db } from "@db/client";
-import { users } from "@db/schema";
-import { Session, ErrorMessages } from "@contracts/constants";
-import { getSessionCookieOptions } from "./lib/cookies";
-import { hashPassword, verifyPassword, createSessionToken } from "./lib/auth";
-import { createRouter, authedQuery, publicQuery } from "./middleware";
+import { db } from "../db/client.js";
+import { users } from "../db/schema.js";
+import { Session, ErrorMessages } from "../contracts/constants.js";
+import { getSessionCookieOptions } from "./lib/cookies.js";
+import { hashPassword, verifyPassword, createSessionToken } from "./lib/auth.js";
+import { createRouter, authedQuery, publicQuery } from "./middleware.js";
 
 async function issueSession(
   userId: number,

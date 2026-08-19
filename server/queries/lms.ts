@@ -1,6 +1,6 @@
 import { and, eq, ilike, or, desc, sql as sqlExpr } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { db } from "@db/client";
+import { db } from "../../db/client.js";
 import {
   courses,
   lessons,
@@ -12,7 +12,7 @@ import {
   certificates,
   users,
   type InsertCourse,
-} from "@db/schema";
+} from "../../db/schema.js";
 
 // ---------- Public catalog ----------
 

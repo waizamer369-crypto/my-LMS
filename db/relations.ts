@@ -9,7 +9,7 @@ import {
   quizQuestions,
   quizAttempts,
   certificates,
-} from "./schema";
+} from "./schema.js";
 
 export const usersRelations = relations(users, ({ many }) => ({
   taughtCourses: many(courses),

@@ -37,7 +37,7 @@ export default function Login() {
       toast.success("Welcome back!");
       navigate("/dashboard");
     },
-    onError: (err) => toast.error(err.message || "Login failed"),
+    onError: (err: { message?: string }) => toast.error(err.message || "Login failed"),
   });
 
   const signupMutation = trpc.auth.signup.useMutation({
@@ -46,7 +46,7 @@ export default function Login() {
       toast.success("Account created — welcome!");
       navigate("/dashboard");
     },
-    onError: (err) => toast.error(err.message || "Signup failed"),
+    onError: (err: { message?: string }) => toast.error(err.message || "Signup failed"),
   });
 
   const isSubmitting = loginMutation.isPending || signupMutation.isPending;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { createRouter, publicQuery, authedQuery } from "./middleware.js";
 import {
   listPublishedCourses,
   listCategories,
@@ -24,7 +24,7 @@ import {
   deleteLesson,
   saveQuiz,
   getPlatformStats,
-} from "./queries/lms";
+} from "./queries/lms.js";
 
 export const lmsRouter = createRouter({
   stats: publicQuery.query(() => getPlatformStats()),
