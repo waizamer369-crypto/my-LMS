@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, publicQuery, authedQuery } from "./middleware.js";
+import { createRouter, publicQuery, authedQuery } from "./trpc-init.js";
 import {
   listPublishedCourses,
   listCategories,

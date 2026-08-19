@@ -7,7 +7,7 @@ import { users } from "../db/schema.js";
 import { Session, ErrorMessages } from "../contracts/constants.js";
 import { getSessionCookieOptions } from "./lib/cookies.js";
 import { hashPassword, verifyPassword, createSessionToken } from "./lib/auth.js";
-import { createRouter, authedQuery, publicQuery } from "./middleware.js";
+import { createRouter, authedQuery, publicQuery } from "./trpc-init.js";
 
 async function issueSession(
   userId: number,
