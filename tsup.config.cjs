@@ -1,5 +1,3 @@
-console.log('>>> LOADED tsup.config.cjs VERSION 2 <<<')
-
 const { defineConfig } = require('tsup')
 const fs = require('fs')
 const path = require('path')
@@ -7,7 +5,12 @@ const path = require('path')
 const root = process.cwd()
 const EXTS = ['.ts', '.tsx', '.js', '.jsx']
 
-function resolveWithExtensions(basePath) {
+function stripKnownExt(p) {
+  return p.replace(/\.(js|jsx|ts|tsx|mjs|cjs)$/, '')
+}
+
+function resolveWithExtensions(rawBasePath) {
+  const basePath = stripKnownExt(rawBasePath)
   for (const ext of EXTS) {
     if (fs.existsSync(basePath + ext)) return basePath + ext
   }
@@ -15,7 +18,7 @@ function resolveWithExtensions(basePath) {
     const indexPath = path.join(basePath, 'index' + ext)
     if (fs.existsSync(indexPath)) return indexPath
   }
-  if (fs.existsSync(basePath)) return basePath
+  if (fs.existsSync(rawBasePath)) return rawBasePath
   return null
 }
 
@@ -24,7 +27,10 @@ module.exports = defineConfig({
   outDir: 'dist',
   format: ['esm'],
   platform: 'node',
-  clean: true,
+  // IMPORTANT: do NOT clean 'dist' — Vite's frontend build output
+  // (dist/public) lives inside this same folder, and clean:true was
+  // deleting it right after Vite created it.
+  clean: false,
   splitting: false,
   bundle: true,
   esbuildOptions(options) {
@@ -39,7 +45,6 @@ module.exports = defineConfig({
           const base = path.join(root, 'db', sub || 'index')
           const resolved = resolveWithExtensions(base)
           if (resolved) return { path: resolved }
-          console.error(`[plugin] FAILED @db alias "${args.path}" -> tried base "${base}"`)
         })
 
         build.onResolve({ filter: /^@contracts(\/.*)?$/ }, (args) => {
@@ -47,14 +52,12 @@ module.exports = defineConfig({
           const base = path.join(root, 'contracts', sub || 'index')
           const resolved = resolveWithExtensions(base)
           if (resolved) return { path: resolved }
-          console.error(`[plugin] FAILED @contracts alias "${args.path}" -> tried base "${base}"`)
         })
 
         build.onResolve({ filter: /^\.{1,2}\// }, (args) => {
           const base = path.resolve(path.dirname(args.importer), args.path)
           const resolved = resolveWithExtensions(base)
           if (resolved) return { path: resolved }
-          console.error(`[plugin] FAILED relative import "${args.path}" from "${args.importer}" -> tried base "${base}"`)
         })
       },
     },
