@@ -15,7 +15,9 @@ export default function Signup() {
   const [error, setError] = useState("");
 
   const register = trpc.auth.register.useMutation({
-    onSuccess: () => navigate("/login"),
+    onSuccess: () => {
+      window.location.href = "/dashboard";
+    },
     onError: (err) => setError(err.message),
   });
 

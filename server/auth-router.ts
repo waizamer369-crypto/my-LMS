@@ -23,7 +23,7 @@ export const authRouter = createRouter({
         password: z.string().min(6),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const existing = await findUserByEmail(input.email);
       if (existing) {
         throw new TRPCError({
@@ -38,7 +38,18 @@ export const authRouter = createRouter({
         passwordHash,
       });
       const token = await signSessionToken({ userId });
-      return { token, userId };
+      const opts = getSessionCookieOptions(ctx.req.headers);
+      ctx.resHeaders.append(
+        "set-cookie",
+        cookie.serialize(Session.cookieName, token, {
+          httpOnly: opts.httpOnly,
+          path: opts.path,
+          sameSite: opts.sameSite?.toLowerCase() as "lax" | "none",
+          secure: opts.secure,
+          maxAge: Session.maxAgeMs / 1000,
+        }),
+      );
+      return { success: true };
     }),
 
   login: publicQuery
