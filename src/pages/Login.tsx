@@ -14,7 +14,7 @@ export default function Login() {
 
   const login = trpc.auth.login.useMutation({
     onSuccess: () => {
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     },
     onError: (err) => setError(err.message),
   });
