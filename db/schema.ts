@@ -1,33 +1,26 @@
 import {
-  pgTable,
-  pgEnum,
+  mysqlTable,
+  mysqlEnum,
   serial,
   varchar,
   text,
-  integer,
+  int,
   bigint,
   boolean,
   json,
   timestamp,
   uniqueIndex,
   index,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/mysql-core";
 
-export const roleEnum = pgEnum("role", ["user", "admin"]);
-export const levelEnum = pgEnum("level", [
-  "beginner",
-  "intermediate",
-  "advanced",
-]);
-
-export const users = pgTable("users", {
+export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
-  unionId: varchar("unionId", { length: 255 }).notNull().unique(),
+  unionId: varchar("unionId", { length: 255 }).unique(),
   name: varchar("name", { length: 255 }),
-  email: varchar("email", { length: 320 }),
-  passwordHash: text("passwordHash"),
+  email: varchar("email", { length: 320 }).unique(),
   avatar: text("avatar"),
-  role: roleEnum("role").default("user").notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -41,7 +34,7 @@ export type InsertUser = typeof users.$inferInsert;
 
 // ---------- LMS tables ----------
 
-export const courses = pgTable(
+export const courses = mysqlTable(
   "courses",
   {
     id: serial("id").primaryKey(),
@@ -49,10 +42,13 @@ export const courses = pgTable(
     subtitle: varchar("subtitle", { length: 255 }),
     description: text("description"),
     category: varchar("category", { length: 100 }).notNull(),
-    level: levelEnum("level").default("beginner").notNull(),
-    priceCents: integer("priceCents").default(0).notNull(),
+    level: mysqlEnum("level", ["beginner", "intermediate", "advanced"])
+      .default("beginner")
+      .notNull(),
+    priceCents: int("priceCents").default(0).notNull(),
     thumbnail: text("thumbnail"),
-    instructorId: bigint("instructorId", { mode: "number" }).notNull(),
+    instructorId: bigint("instructorId", { mode: "number", unsigned: true })
+      .notNull(),
     published: boolean("published").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt")
@@ -68,16 +64,16 @@ export const courses = pgTable(
 export type Course = typeof courses.$inferSelect;
 export type InsertCourse = typeof courses.$inferInsert;
 
-export const lessons = pgTable(
+export const lessons = mysqlTable(
   "lessons",
   {
     id: serial("id").primaryKey(),
-    courseId: bigint("courseId", { mode: "number" }).notNull(),
+    courseId: bigint("courseId", { mode: "number", unsigned: true }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     content: text("content"),
     videoUrl: varchar("videoUrl", { length: 512 }),
-    durationMin: integer("durationMin").default(10).notNull(),
-    orderIndex: integer("orderIndex").default(0).notNull(),
+    durationMin: int("durationMin").default(10).notNull(),
+    orderIndex: int("orderIndex").default(0).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({
@@ -87,12 +83,12 @@ export const lessons = pgTable(
 export type Lesson = typeof lessons.$inferSelect;
 export type InsertLesson = typeof lessons.$inferInsert;
 
-export const enrollments = pgTable(
+export const enrollments = mysqlTable(
   "enrollments",
   {
     id: serial("id").primaryKey(),
-    userId: bigint("userId", { mode: "number" }).notNull(),
-    courseId: bigint("courseId", { mode: "number" }).notNull(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    courseId: bigint("courseId", { mode: "number", unsigned: true }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({
@@ -105,13 +101,13 @@ export const enrollments = pgTable(
 );
 export type Enrollment = typeof enrollments.$inferSelect;
 
-export const lessonProgress = pgTable(
+export const lessonProgress = mysqlTable(
   "lesson_progress",
   {
     id: serial("id").primaryKey(),
-    userId: bigint("userId", { mode: "number" }).notNull(),
-    lessonId: bigint("lessonId", { mode: "number" }).notNull(),
-    courseId: bigint("courseId", { mode: "number" }).notNull(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    lessonId: bigint("lessonId", { mode: "number", unsigned: true }).notNull(),
+    courseId: bigint("courseId", { mode: "number", unsigned: true }).notNull(),
     completedAt: timestamp("completedAt").defaultNow().notNull(),
   },
   (table) => ({
@@ -127,25 +123,30 @@ export const lessonProgress = pgTable(
 );
 export type LessonProgress = typeof lessonProgress.$inferSelect;
 
-export const quizzes = pgTable("quizzes", {
-  id: serial("id").primaryKey(),
-  courseId: bigint("courseId", { mode: "number" }).notNull().unique(),
-  title: varchar("title", { length: 255 }).notNull(),
-  passScore: integer("passScore").default(70).notNull(), // percent
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const quizzes = mysqlTable(
+  "quizzes",
+  {
+    id: serial("id").primaryKey(),
+    courseId: bigint("courseId", { mode: "number", unsigned: true })
+      .notNull()
+      .unique(),
+    title: varchar("title", { length: 255 }).notNull(),
+    passScore: int("passScore").default(70).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+);
 export type Quiz = typeof quizzes.$inferSelect;
 export type InsertQuiz = typeof quizzes.$inferInsert;
 
-export const quizQuestions = pgTable(
+export const quizQuestions = mysqlTable(
   "quiz_questions",
   {
     id: serial("id").primaryKey(),
-    quizId: bigint("quizId", { mode: "number" }).notNull(),
+    quizId: bigint("quizId", { mode: "number", unsigned: true }).notNull(),
     question: text("question").notNull(),
     options: json("options").$type<string[]>().notNull(),
-    correctIndex: integer("correctIndex").notNull(),
-    orderIndex: integer("orderIndex").default(0).notNull(),
+    correctIndex: int("correctIndex").notNull(),
+    orderIndex: int("orderIndex").default(0).notNull(),
   },
   (table) => ({
     quizIdx: index("question_quiz_idx").on(table.quizId),
@@ -153,14 +154,14 @@ export const quizQuestions = pgTable(
 );
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
 
-export const quizAttempts = pgTable(
+export const quizAttempts = mysqlTable(
   "quiz_attempts",
   {
     id: serial("id").primaryKey(),
-    userId: bigint("userId", { mode: "number" }).notNull(),
-    quizId: bigint("quizId", { mode: "number" }).notNull(),
-    score: integer("score").notNull(),
-    total: integer("total").notNull(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    quizId: bigint("quizId", { mode: "number", unsigned: true }).notNull(),
+    score: int("score").notNull(),
+    total: int("total").notNull(),
     passed: boolean("passed").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
@@ -170,12 +171,12 @@ export const quizAttempts = pgTable(
 );
 export type QuizAttempt = typeof quizAttempts.$inferSelect;
 
-export const certificates = pgTable(
+export const certificates = mysqlTable(
   "certificates",
   {
     id: serial("id").primaryKey(),
-    userId: bigint("userId", { mode: "number" }).notNull(),
-    courseId: bigint("courseId", { mode: "number" }).notNull(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    courseId: bigint("courseId", { mode: "number", unsigned: true }).notNull(),
     issuedAt: timestamp("issuedAt").defaultNow().notNull(),
   },
   (table) => ({

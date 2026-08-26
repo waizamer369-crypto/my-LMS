@@ -1,11 +1,18 @@
+function required(name: string, value: string | undefined): string {
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 export const env = {
   isProduction: process.env.NODE_ENV === "production",
-  jwtSecret: process.env.JWT_SECRET ?? "dev-only-insecure-secret-change-me",
-};
+  port: parseInt(process.env.PORT || "3000", 10),
 
-if (env.isProduction && env.jwtSecret === "dev-only-insecure-secret-change-me") {
-  // eslint-disable-next-line no-console
-  console.warn(
-    "[auth] JWT_SECRET is not set in production. Set it in your Vercel project env vars.",
-  );
-}
+  // Adjust these names if your .env file uses different keys
+  databaseUrl: required("DATABASE_URL", process.env.DATABASE_URL),
+  appId: required("KIMI_APP_ID", process.env.KIMI_APP_ID),
+  appSecret: required("KIMI_APP_SECRET", process.env.KIMI_APP_SECRET),
+  kimiAuthUrl: process.env.KIMI_AUTH_URL || "https://kimi.moonshot.cn",
+  ownerUnionId: process.env.OWNER_UNION_ID,
+};

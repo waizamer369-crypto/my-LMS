@@ -1,6 +1,4 @@
-import { and, eq, ilike, or, desc, sql as sqlExpr } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
-import { db } from "../../db/client.js";
+import { getDb } from "./connection.js";
 import {
   courses,
   lessons,
@@ -11,25 +9,47 @@ import {
   quizAttempts,
   certificates,
   users,
-  type InsertCourse,
 } from "../../db/schema.js";
+import { and, desc, eq, like, or, sql, asc, inArray } from "drizzle-orm";
 
-// ---------- Public catalog ----------
+// ---------- Courses ----------
 
-export async function getPlatformStats() {
-  const [[courseCount], [userCount], [certCount]] = await Promise.all([
-    db.select({ count: sqlExpr<number>`count(*)::int` }).from(courses).where(eq(courses.published, true)),
-    db.select({ count: sqlExpr<number>`count(*)::int` }).from(users),
-    db.select({ count: sqlExpr<number>`count(*)::int` }).from(certificates),
-  ]);
-  return {
-    courses: courseCount?.count ?? 0,
-    learners: userCount?.count ?? 0,
-    certificates: certCount?.count ?? 0,
-  };
+export async function listPublishedCourses(filter?: {
+  category?: string;
+  search?: string;
+}) {
+  const db = getDb();
+  const conditions = [eq(courses.published, true)];
+  if (filter?.category && filter.category !== "All") {
+    conditions.push(eq(courses.category, filter.category));
+  }
+  if (filter?.search) {
+    const q = `%${filter.search}%`;
+    conditions.push(
+      or(like(courses.title, q), like(courses.description, q))!,
+    );
+  }
+  const rows = await db
+    .select({
+      course: courses,
+      instructorName: users.name,
+      lessonCount: sql<number>`(select count(*) from ${lessons} where ${lessons.courseId} = ${courses.id})`,
+      enrollmentCount: sql<number>`(select count(*) from ${enrollments} where ${enrollments.courseId} = ${courses.id})`,
+    })
+    .from(courses)
+    .leftJoin(users, eq(courses.instructorId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(courses.createdAt));
+  return rows.map((r) => ({
+    ...r.course,
+    instructorName: r.instructorName,
+    lessonCount: Number(r.lessonCount),
+    enrollmentCount: Number(r.enrollmentCount),
+  }));
 }
 
 export async function listCategories() {
+  const db = getDb();
   const rows = await db
     .selectDistinct({ category: courses.category })
     .from(courses)
@@ -37,140 +57,179 @@ export async function listCategories() {
   return rows.map((r) => r.category);
 }
 
-export async function listPublishedCourses(input?: {
-  category?: string;
-  search?: string;
-}) {
-  const conditions = [eq(courses.published, true)];
-  if (input?.category) conditions.push(eq(courses.category, input.category));
-  if (input?.search) {
-    conditions.push(
-      or(
-        ilike(courses.title, `%${input.search}%`),
-        ilike(courses.description, `%${input.search}%`),
-      )!,
-    );
-  }
-  return db
-    .select()
-    .from(courses)
-    .where(and(...conditions))
-    .orderBy(desc(courses.createdAt));
-}
-
 export async function getCourseById(id: number) {
-  return db.query.courses.findFirst({
+  const db = getDb();
+  const row = await db.query.courses.findFirst({
     where: eq(courses.id, id),
-    with: {
-      lessons: { orderBy: (l, { asc }) => [asc(l.orderIndex)] },
-      quiz: { with: { questions: { orderBy: (q, { asc }) => [asc(q.orderIndex)] } } },
-    },
+    with: { instructor: true, lessons: { orderBy: asc(lessons.orderIndex) } },
   });
-}
-
-// ---------- Enrollment & learning ----------
-
-export async function isEnrolled(userId: number, courseId: number) {
-  const [row] = await db
-    .select({ id: enrollments.id })
+  if (!row) return null;
+  const enrollmentCount = await db
+    .select({ count: sql<number>`count(*)` })
     .from(enrollments)
-    .where(and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)))
-    .limit(1);
-  return !!row;
+    .where(eq(enrollments.courseId, id));
+  const quiz = await db.query.quizzes.findFirst({
+    where: eq(quizzes.courseId, id),
+    with: { questions: { orderBy: asc(quizQuestions.orderIndex) } },
+  });
+  return {
+    ...row,
+    enrollmentCount: Number(enrollmentCount[0]?.count ?? 0),
+    quiz: quiz ?? null,
+  };
 }
+
+// ---------- Enrollments & progress ----------
 
 export async function enroll(userId: number, courseId: number) {
+  const db = getDb();
   await db
     .insert(enrollments)
     .values({ userId, courseId })
-    .onConflictDoNothing();
+    .onDuplicateKeyUpdate({ set: { userId } });
+}
+
+export async function isEnrolled(userId: number, courseId: number) {
+  const db = getDb();
+  const row = await db.query.enrollments.findFirst({
+    where: and(
+      eq(enrollments.userId, userId),
+      eq(enrollments.courseId, courseId),
+    ),
+  });
+  return !!row;
 }
 
 export async function getMyCourses(userId: number) {
+  const db = getDb();
   const rows = await db
-    .select({ course: courses, enrolledAt: enrollments.createdAt })
+    .select()
     .from(enrollments)
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .leftJoin(users, eq(courses.instructorId, users.id))
     .where(eq(enrollments.userId, userId))
     .orderBy(desc(enrollments.createdAt));
 
-  const results = [];
-  for (const row of rows) {
-    const [totalLessons] = await db
-      .select({ count: sqlExpr<number>`count(*)::int` })
-      .from(lessons)
-      .where(eq(lessons.courseId, row.course.id));
-    const [completed] = await db
-      .select({ count: sqlExpr<number>`count(*)::int` })
-      .from(lessonProgress)
-      .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.courseId, row.course.id)));
-    results.push({
-      ...row.course,
-      enrolledAt: row.enrolledAt,
-      totalLessons: totalLessons?.count ?? 0,
-      completedLessons: completed?.count ?? 0,
-    });
-  }
-  return results;
+  return Promise.all(
+    rows.map(async (r) => {
+      const total = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(lessons)
+        .where(eq(lessons.courseId, r.courses.id));
+      const done = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(lessonProgress)
+        .where(
+          and(
+            eq(lessonProgress.userId, userId),
+            eq(lessonProgress.courseId, r.courses.id),
+          ),
+        );
+      const cert = await db.query.certificates.findFirst({
+        where: and(
+          eq(certificates.userId, userId),
+          eq(certificates.courseId, r.courses.id),
+        ),
+      });
+      const totalCount = Number(total[0]?.count ?? 0);
+      const doneCount = Number(done[0]?.count ?? 0);
+      return {
+        enrollment: r.enrollments,
+        course: r.courses,
+        instructorName: r.users?.name ?? null,
+        totalLessons: totalCount,
+        completedLessons: doneCount,
+        progress: totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100),
+        certificate: cert ?? null,
+      };
+    }),
+  );
 }
 
 export async function getLearningState(userId: number, courseId: number) {
-  const courseLessons = await db
+  const db = getDb();
+  const lessonRows = await db
     .select()
     .from(lessons)
     .where(eq(lessons.courseId, courseId))
-    .orderBy(lessons.orderIndex);
-
-  const progress = await db
-    .select({ lessonId: lessonProgress.lessonId })
+    .orderBy(asc(lessons.orderIndex));
+  const progressRows = await db
+    .select()
     .from(lessonProgress)
-    .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.courseId, courseId)));
-
-  const completedIds = new Set(progress.map((p) => p.lessonId));
-
-  const quiz = await db.query.quizzes.findFirst({ where: eq(quizzes.courseId, courseId) });
-
-  let quizAttempted = false;
-  let quizPassed = false;
-  if (quiz) {
-    const attempts = await db
-      .select()
-      .from(quizAttempts)
-      .where(and(eq(quizAttempts.userId, userId), eq(quizAttempts.quizId, quiz.id)));
-    quizAttempted = attempts.length > 0;
-    quizPassed = attempts.some((a) => a.passed);
-  }
-
+    .where(
+      and(
+        eq(lessonProgress.userId, userId),
+        eq(lessonProgress.courseId, courseId),
+      ),
+    );
+  const doneIds = new Set(progressRows.map((p) => p.lessonId));
+  const quiz = await db.query.quizzes.findFirst({
+    where: eq(quizzes.courseId, courseId),
+    with: { questions: { orderBy: asc(quizQuestions.orderIndex) } },
+  });
+  const attempts = quiz
+    ? await db
+        .select()
+        .from(quizAttempts)
+        .where(
+          and(
+            eq(quizAttempts.userId, userId),
+            eq(quizAttempts.quizId, quiz.id),
+          ),
+        )
+        .orderBy(desc(quizAttempts.createdAt))
+    : [];
+  const cert = await db.query.certificates.findFirst({
+    where: and(
+      eq(certificates.userId, userId),
+      eq(certificates.courseId, courseId),
+    ),
+  });
   return {
-    lessons: courseLessons.map((l) => ({ ...l, completed: completedIds.has(l.id) })),
-    hasQuiz: !!quiz,
-    quizAttempted,
-    quizPassed,
+    lessons: lessonRows.map((l) => ({ ...l, completed: doneIds.has(l.id) })),
+    quiz: quiz
+      ? {
+          id: quiz.id,
+          title: quiz.title,
+          passScore: quiz.passScore,
+          questionCount: quiz.questions.length,
+        }
+      : null,
+    bestAttempt: attempts[0] ?? null,
+    passed: attempts.some((a) => a.passed),
+    certificate: cert ?? null,
   };
 }
 
 export async function completeLesson(userId: number, lessonId: number, courseId: number) {
+  const db = getDb();
   await db
     .insert(lessonProgress)
     .values({ userId, lessonId, courseId })
-    .onConflictDoNothing();
+    .onDuplicateKeyUpdate({ set: { userId } });
 }
 
 export async function uncompleteLesson(userId: number, lessonId: number) {
+  const db = getDb();
   await db
     .delete(lessonProgress)
-    .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.lessonId, lessonId)));
+    .where(
+      and(
+        eq(lessonProgress.userId, userId),
+        eq(lessonProgress.lessonId, lessonId),
+      ),
+    );
 }
 
 // ---------- Quiz ----------
 
 export async function getQuizForTaking(_userId: number, courseId: number) {
+  const db = getDb();
   const quiz = await db.query.quizzes.findFirst({
     where: eq(quizzes.courseId, courseId),
-    with: { questions: { orderBy: (q, { asc }) => [asc(q.orderIndex)] } },
+    with: { questions: { orderBy: asc(quizQuestions.orderIndex) } },
   });
-  if (!quiz) throw new TRPCError({ code: "NOT_FOUND", message: "This course has no quiz" });
-
+  if (!quiz) return null;
   return {
     id: quiz.id,
     title: quiz.title,
@@ -188,110 +247,199 @@ export async function submitQuiz(
   courseId: number,
   answers: Record<number, number>,
 ) {
+  const db = getDb();
   const quiz = await db.query.quizzes.findFirst({
     where: eq(quizzes.courseId, courseId),
     with: { questions: true },
   });
-  if (!quiz) throw new TRPCError({ code: "NOT_FOUND", message: "This course has no quiz" });
-
-  let correct = 0;
-  for (const q of quiz.questions) {
-    if (answers[q.id] === q.correctIndex) correct += 1;
-  }
+  if (!quiz) throw new Error("Quiz not found");
   const total = quiz.questions.length;
-  const score = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const passed = score >= quiz.passScore;
-
-  await db.insert(quizAttempts).values({ userId, quizId: quiz.id, score, total, passed });
-
+  if (total === 0) throw new Error("Quiz has no questions");
+  const score = quiz.questions.filter(
+    (q) => answers[q.id] === q.correctIndex,
+  ).length;
+  const percent = Math.round((score / total) * 100);
+  const passed = percent >= quiz.passScore;
+  await db.insert(quizAttempts).values({
+    userId,
+    quizId: quiz.id,
+    score: percent,
+    total: 100,
+    passed,
+  });
+  let certificate = null;
   if (passed) {
     await db
       .insert(certificates)
       .values({ userId, courseId })
-      .onConflictDoNothing();
+      .onDuplicateKeyUpdate({ set: { userId } });
+    certificate = await db.query.certificates.findFirst({
+      where: and(
+        eq(certificates.userId, userId),
+        eq(certificates.courseId, courseId),
+      ),
+    });
   }
-
-  return { score, total, correct, passed };
+  return {
+    score: percent,
+    passed,
+    passScore: quiz.passScore,
+    correctCount: score,
+    totalQuestions: total,
+    certificate,
+  };
 }
 
 // ---------- Certificates ----------
 
 export async function getMyCertificates(userId: number) {
-  return db
-    .select({ certificate: certificates, course: courses })
+  const db = getDb();
+  const rows = await db
+    .select()
     .from(certificates)
     .innerJoin(courses, eq(certificates.courseId, courses.id))
     .where(eq(certificates.userId, userId))
     .orderBy(desc(certificates.issuedAt));
+  return rows.map((r) => ({ certificate: r.certificates, course: r.courses }));
 }
 
 export async function getCertificate(userId: number, courseId: number) {
-  return db.query.certificates.findFirst({
-    where: and(eq(certificates.userId, userId), eq(certificates.courseId, courseId)),
-    with: { course: true, user: true },
+  const db = getDb();
+  const cert = await db.query.certificates.findFirst({
+    where: and(
+      eq(certificates.userId, userId),
+      eq(certificates.courseId, courseId),
+    ),
+    with: { course: { with: { instructor: true } }, user: true },
   });
+  return cert ?? null;
 }
 
 // ---------- Instructor ----------
 
-async function assertOwnsCourse(courseId: number, instructorId: number) {
-  const [course] = await db
-    .select({ id: courses.id })
-    .from(courses)
-    .where(and(eq(courses.id, courseId), eq(courses.instructorId, instructorId)))
-    .limit(1);
-  if (!course) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "You don't own this course" });
-  }
-}
-
 export async function getInstructorCourses(instructorId: number) {
-  return db
+  const db = getDb();
+  const rows = await db
     .select()
     .from(courses)
     .where(eq(courses.instructorId, instructorId))
     .orderBy(desc(courses.createdAt));
-}
-
-export async function getInstructorCourseDetail(id: number, instructorId: number) {
-  const course = await db.query.courses.findFirst({
-    where: and(eq(courses.id, id), eq(courses.instructorId, instructorId)),
-    with: {
-      lessons: { orderBy: (l, { asc }) => [asc(l.orderIndex)] },
-      quiz: { with: { questions: { orderBy: (q, { asc }) => [asc(q.orderIndex)] } } },
-    },
-  });
-  return course;
+  return Promise.all(
+    rows.map(async (c) => {
+      const [enrollCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(enrollments)
+        .where(eq(enrollments.courseId, c.id));
+      const [lessonCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(lessons)
+        .where(eq(lessons.courseId, c.id));
+      const [certCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(certificates)
+        .where(eq(certificates.courseId, c.id));
+      const quiz = await db.query.quizzes.findFirst({
+        where: eq(quizzes.courseId, c.id),
+        with: { questions: true },
+      });
+      return {
+        ...c,
+        enrollmentCount: Number(enrollCount?.count ?? 0),
+        lessonCount: Number(lessonCount?.count ?? 0),
+        certificateCount: Number(certCount?.count ?? 0),
+        quizQuestionCount: quiz?.questions.length ?? 0,
+      };
+    }),
+  );
 }
 
 export async function createCourse(
   instructorId: number,
-  data: Omit<InsertCourse, "id" | "instructorId" | "createdAt" | "updatedAt" | "published">,
+  data: {
+    title: string;
+    subtitle?: string;
+    description?: string;
+    category: string;
+    level: "beginner" | "intermediate" | "advanced";
+    priceCents: number;
+    thumbnail?: string;
+  },
 ) {
-  const [course] = await db
+  const db = getDb();
+  const [{ id }] = await db
     .insert(courses)
     .values({ ...data, instructorId })
-    .returning();
-  return course;
+    .$returningId();
+  return id;
 }
 
 export async function updateCourse(
   id: number,
   instructorId: number,
-  data: Partial<Omit<InsertCourse, "id" | "instructorId">>,
+  data: Partial<{
+    title: string;
+    subtitle: string;
+    description: string;
+    category: string;
+    level: "beginner" | "intermediate" | "advanced";
+    priceCents: number;
+    thumbnail: string;
+    published: boolean;
+  }>,
 ) {
-  await assertOwnsCourse(id, instructorId);
-  await db.update(courses).set(data).where(eq(courses.id, id));
+  const db = getDb();
+  await db
+    .update(courses)
+    .set(data)
+    .where(and(eq(courses.id, id), eq(courses.instructorId, instructorId)));
 }
 
 export async function deleteCourse(id: number, instructorId: number) {
-  await assertOwnsCourse(id, instructorId);
+  const db = getDb();
+  const course = await db.query.courses.findFirst({
+    where: and(eq(courses.id, id), eq(courses.instructorId, instructorId)),
+  });
+  if (!course) throw new Error("Course not found");
+  const lessonRows = await db
+    .select({ id: lessons.id })
+    .from(lessons)
+    .where(eq(lessons.courseId, id));
+  const lessonIds = lessonRows.map((l) => l.id);
+  const quiz = await db.query.quizzes.findFirst({
+    where: eq(quizzes.courseId, id),
+  });
+  if (quiz) {
+    await db.delete(quizAttempts).where(eq(quizAttempts.quizId, quiz.id));
+    await db.delete(quizQuestions).where(eq(quizQuestions.quizId, quiz.id));
+    await db.delete(quizzes).where(eq(quizzes.id, quiz.id));
+  }
+  if (lessonIds.length > 0) {
+    await db.delete(lessonProgress).where(inArray(lessonProgress.lessonId, lessonIds));
+  }
+  await db.delete(lessonProgress).where(eq(lessonProgress.courseId, id));
+  await db.delete(certificates).where(eq(certificates.courseId, id));
+  await db.delete(enrollments).where(eq(enrollments.courseId, id));
+  await db.delete(lessons).where(eq(lessons.courseId, id));
   await db.delete(courses).where(eq(courses.id, id));
+}
+
+export async function getInstructorCourseDetail(id: number, instructorId: number) {
+  const db = getDb();
+  const course = await db.query.courses.findFirst({
+    where: and(eq(courses.id, id), eq(courses.instructorId, instructorId)),
+    with: { lessons: { orderBy: asc(lessons.orderIndex) } },
+  });
+  if (!course) return null;
+  const quiz = await db.query.quizzes.findFirst({
+    where: eq(quizzes.courseId, id),
+    with: { questions: { orderBy: asc(quizQuestions.orderIndex) } },
+  });
+  return { ...course, quiz: quiz ?? null };
 }
 
 export async function upsertLesson(
   instructorId: number,
-  input: {
+  data: {
     id?: number;
     courseId: number;
     title: string;
@@ -301,69 +449,129 @@ export async function upsertLesson(
     orderIndex: number;
   },
 ) {
-  await assertOwnsCourse(input.courseId, instructorId);
-  if (input.id) {
-    const { id, ...rest } = input;
-    await db.update(lessons).set(rest).where(eq(lessons.id, id));
-    return { id };
+  const db = getDb();
+  const course = await db.query.courses.findFirst({
+    where: and(
+      eq(courses.id, data.courseId),
+      eq(courses.instructorId, instructorId),
+    ),
+  });
+  if (!course) throw new Error("Course not found");
+  if (data.id) {
+    await db
+      .update(lessons)
+      .set({
+        title: data.title,
+        content: data.content,
+        videoUrl: data.videoUrl,
+        durationMin: data.durationMin,
+        orderIndex: data.orderIndex,
+      })
+      .where(eq(lessons.id, data.id));
+    return data.id;
   }
-  const [lesson] = await db.insert(lessons).values(input).returning();
-  return lesson;
+  const [{ id }] = await db
+    .insert(lessons)
+    .values({
+      courseId: data.courseId,
+      title: data.title,
+      content: data.content,
+      videoUrl: data.videoUrl,
+      durationMin: data.durationMin,
+      orderIndex: data.orderIndex,
+    })
+    .$returningId();
+  return id;
 }
 
-export async function deleteLesson(instructorId: number, id: number) {
-  const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id)).limit(1);
-  if (!lesson) throw new TRPCError({ code: "NOT_FOUND" });
-  await assertOwnsCourse(lesson.courseId, instructorId);
-  await db.delete(lessons).where(eq(lessons.id, id));
+export async function deleteLesson(instructorId: number, lessonId: number) {
+  const db = getDb();
+  const lesson = await db.query.lessons.findFirst({
+    where: eq(lessons.id, lessonId),
+    with: { course: true },
+  });
+  if (!lesson || lesson.course.instructorId !== instructorId) {
+    throw new Error("Lesson not found");
+  }
+  await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, lessonId));
+  await db.delete(lessons).where(eq(lessons.id, lessonId));
 }
 
 export async function saveQuiz(
   instructorId: number,
-  input: {
+  data: {
     courseId: number;
     title: string;
     passScore: number;
-    questions: { question: string; options: string[]; correctIndex: number }[];
+    questions: {
+      question: string;
+      options: string[];
+      correctIndex: number;
+    }[];
   },
 ) {
-  await assertOwnsCourse(input.courseId, instructorId);
-
+  const db = getDb();
+  const course = await db.query.courses.findFirst({
+    where: and(
+      eq(courses.id, data.courseId),
+      eq(courses.instructorId, instructorId),
+    ),
+  });
+  if (!course) throw new Error("Course not found");
   const existing = await db.query.quizzes.findFirst({
-    where: eq(quizzes.courseId, input.courseId),
+    where: eq(quizzes.courseId, data.courseId),
   });
+  let quizId: number;
+  if (existing) {
+    quizId = existing.id;
+    await db
+      .update(quizzes)
+      .set({ title: data.title, passScore: data.passScore })
+      .where(eq(quizzes.id, quizId));
+    await db.delete(quizAttempts).where(eq(quizAttempts.quizId, quizId));
+    await db.delete(quizQuestions).where(eq(quizQuestions.quizId, quizId));
+  } else {
+    const [{ id }] = await db
+      .insert(quizzes)
+      .values({
+        courseId: data.courseId,
+        title: data.title,
+        passScore: data.passScore,
+      })
+      .$returningId();
+    quizId = id;
+  }
+  if (data.questions.length > 0) {
+    await db.insert(quizQuestions).values(
+      data.questions.map((q, i) => ({
+        quizId,
+        question: q.question,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        orderIndex: i,
+      })),
+    );
+  }
+  return quizId;
+}
 
-  const quizId = await db.transaction(async (tx) => {
-    let id: number;
-    if (existing) {
-      await tx
-        .update(quizzes)
-        .set({ title: input.title, passScore: input.passScore })
-        .where(eq(quizzes.id, existing.id));
-      id = existing.id;
-      await tx.delete(quizQuestions).where(eq(quizQuestions.quizId, id));
-    } else {
-      const [created] = await tx
-        .insert(quizzes)
-        .values({ courseId: input.courseId, title: input.title, passScore: input.passScore })
-        .returning();
-      id = created.id;
-    }
+// ---------- Stats ----------
 
-    if (input.questions.length > 0) {
-      await tx.insert(quizQuestions).values(
-        input.questions.map((q, i) => ({
-          quizId: id,
-          question: q.question,
-          options: q.options,
-          correctIndex: q.correctIndex,
-          orderIndex: i,
-        })),
-      );
-    }
-
-    return id;
-  });
-
-  return { ok: true, quizId };
+export async function getPlatformStats() {
+  const db = getDb();
+  const [courseCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(courses)
+    .where(eq(courses.published, true));
+  const [learnerCount] = await db
+    .select({ count: sql<number>`count(distinct ${enrollments.userId})` })
+    .from(enrollments);
+  const [certCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(certificates);
+  return {
+    courses: Number(courseCount?.count ?? 0),
+    learners: Number(learnerCount?.count ?? 0),
+    certificates: Number(certCount?.count ?? 0),
+  };
 }

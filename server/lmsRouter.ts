@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, publicQuery, authedQuery } from "./trpc-init.js";
+import { createRouter, publicQuery, authedQuery } from "./middleware.js";
 import {
   listPublishedCourses,
   listCategories,
@@ -52,7 +52,6 @@ export const lmsRouter = createRouter({
       const enrolled = ctx.user
         ? await isEnrolled(ctx.user.id, input.id)
         : false;
-      // Strip quiz answers from public payload
       const quiz = course.quiz
         ? {
             id: course.quiz.id,
@@ -151,8 +150,6 @@ export const lmsRouter = createRouter({
       if (!cert) throw new TRPCError({ code: "NOT_FOUND" });
       return cert;
     }),
-
-  // ---------- Instructor ----------
 
   instructorCourses: authedQuery.query(({ ctx }) =>
     getInstructorCourses(ctx.user.id),

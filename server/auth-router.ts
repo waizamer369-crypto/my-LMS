@@ -1,120 +1,81 @@
-import { z } from "zod";
 import * as cookie from "cookie";
+import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
-import { db } from "../db/client.js";
-import { users } from "../db/schema.js";
-import { Session, ErrorMessages } from "../contracts/constants.js";
-import { getSessionCookieOptions } from "./lib/cookies.js";
-import { hashPassword, verifyPassword, createSessionToken } from "./lib/auth.js";
-import { createRouter, authedQuery, publicQuery } from "./trpc-init.js";
-
-async function issueSession(
-  userId: number,
-  headers: Headers,
-  resHeaders: Headers,
-) {
-  const token = await createSessionToken(userId);
-  const opts = getSessionCookieOptions(headers);
-  resHeaders.append(
-    "set-cookie",
-    cookie.serialize(Session.cookieName, token, {
-      httpOnly: opts.httpOnly,
-      path: opts.path,
-      sameSite: opts.sameSite,
-      secure: opts.secure,
-      maxAge: Math.floor(Session.maxAgeMs / 1000),
-    }),
-  );
-}
+import { Session } from "@contracts/constants";
+import { getSessionCookieOptions } from "./lib/cookies";
+import { createRouter, authedQuery, publicQuery } from './middleware.ts';
+import {
+  findUserByEmail,
+  createLocalUser,
+  hashPassword,
+  verifyPassword,
+} from './queries/users.ts';
+import { signSessionToken } from './kimi/session.ts';
 
 export const authRouter = createRouter({
-  me: authedQuery.query((opts) => {
-    const { passwordHash: _passwordHash, ...safeUser } = opts.ctx.user;
-    return safeUser;
-  }),
+  me: authedQuery.query((opts) => opts.ctx.user),
 
-  signup: publicQuery
+  register: publicQuery
     .input(
       z.object({
-        name: z.string().min(2, "Name must be at least 2 characters"),
-        email: z.string().email("Enter a valid email"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
+        name: z.string().min(2),
+        email: z.string().email(),
+        password: z.string().min(6),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const email = input.email.toLowerCase().trim();
-
-      const [existing] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
+    .mutation(async ({ input }) => {
+      const existing = await findUserByEmail(input.email);
       if (existing) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: ErrorMessages.emailTaken,
+          message: "Email already registered",
         });
       }
-
-      const passwordHash = await hashPassword(input.password);
-
-      const [user] = await db
-        .insert(users)
-        .values({
-          unionId: email,
-          name: input.name,
-          email,
-          passwordHash,
-          role: "user",
-        })
-        .returning();
-
-      await issueSession(user.id, ctx.req.headers, ctx.resHeaders);
-
-      return { id: user.id, name: user.name, email: user.email, role: user.role };
+      const passwordHash = hashPassword(input.password);
+      const userId = await createLocalUser({
+        name: input.name,
+        email: input.email,
+        passwordHash,
+      });
+      const token = await signSessionToken({ userId });
+      return { token, userId };
     }),
 
   login: publicQuery
     .input(
       z.object({
-        email: z.string().email("Enter a valid email"),
-        password: z.string().min(1, "Password is required"),
+        email: z.string().email(),
+        password: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const email = input.email.toLowerCase().trim();
-
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
+    .mutation(async ({ input, ctx }) => {
+      const user = await findUserByEmail(input.email);
       if (!user || !user.passwordHash) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: ErrorMessages.invalidCredentials,
+          message: "Invalid email or password",
         });
       }
-
-      const valid = await verifyPassword(input.password, user.passwordHash);
+      const valid = verifyPassword(input.password, user.passwordHash);
       if (!valid) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: ErrorMessages.invalidCredentials,
+          message: "Invalid email or password",
         });
       }
-
-      await db
-        .update(users)
-        .set({ lastSignInAt: new Date() })
-        .where(eq(users.id, user.id));
-
-      await issueSession(user.id, ctx.req.headers, ctx.resHeaders);
-
-      return { id: user.id, name: user.name, email: user.email, role: user.role };
+      const token = await signSessionToken({ userId: user.id });
+      const opts = getSessionCookieOptions(ctx.req.headers);
+      ctx.resHeaders.append(
+        "set-cookie",
+        cookie.serialize(Session.cookieName, token, {
+          httpOnly: opts.httpOnly,
+          path: opts.path,
+          sameSite: opts.sameSite?.toLowerCase() as "lax" | "none",
+          secure: opts.secure,
+          maxAge: Session.maxAgeMs / 1000,
+        }),
+      );
+      return { success: true };
     }),
 
   logout: authedQuery.mutation(async ({ ctx }) => {
@@ -124,7 +85,7 @@ export const authRouter = createRouter({
       cookie.serialize(Session.cookieName, "", {
         httpOnly: opts.httpOnly,
         path: opts.path,
-        sameSite: opts.sameSite,
+        sameSite: opts.sameSite?.toLowerCase() as "lax" | "none",
         secure: opts.secure,
         maxAge: 0,
       }),
