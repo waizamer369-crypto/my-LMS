@@ -2,7 +2,7 @@ import * as cookie from "cookie";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { Session } from "@contracts/constants";
-import { getSessionCookieOptions } from "./lib/cookies";
+import { getSessionCookieOptions } from "./lib/cookies.ts";
 import { createRouter, authedQuery, publicQuery } from './middleware.ts';
 import {
   findUserByEmail,
