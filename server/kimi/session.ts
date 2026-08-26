@@ -7,7 +7,7 @@ const JWT_ALG = "HS256";
 export async function signSessionToken(
   payload: SessionPayload,
 ): Promise<string> {
-  const secret = new TextEncoder().encode(env.appSecret ?? "");
+  const secret = new TextEncoder().encode(env.sessionSecret);
   return new jose.SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: JWT_ALG })
     .setIssuedAt()
