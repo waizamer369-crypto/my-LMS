@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@db/schema";
 import type { InsertUser } from "@db/schema";
 import { getDb } from "./connection";
-import { env } from "../lib/env";
+import { env } from "../lib/env.ts";
 import { randomBytes, pbkdf2Sync, timingSafeEqual } from "crypto";
 
 const SALT_LEN = 16;

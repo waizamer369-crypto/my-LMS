@@ -3,12 +3,12 @@ import { setCookie } from "hono/cookie";
 import * as jose from "jose";
 import * as cookie from "cookie";
 import { eq } from "drizzle-orm";
-import { env } from "../lib/env";
-import { getSessionCookieOptions } from "../lib/cookies";
+import { env } from "../lib/env.ts";
+import { getSessionCookieOptions } from "../lib/cookies.ts";
 import { Session } from "@contracts/constants";
 import { Errors } from "@contracts/errors";
 import { signSessionToken, verifySessionToken } from './session.ts';
-import { users as kimiUsers } from "./platform";
+import { users as kimiUsers } from "./platform.ts";
 import { findUserByUnionId, upsertUser } from '../queries/users.ts';
 import { getDb } from '../queries/connection.ts';
 import * as schema from "@db/schema";
@@ -18,6 +18,10 @@ async function exchangeAuthCode(
   code: string,
   redirectUri: string,
 ): Promise<TokenResponse> {
+  if (!env.appId || !env.appSecret) {
+    throw new Error("Kimi OAuth client credentials are not configured");
+  }
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
