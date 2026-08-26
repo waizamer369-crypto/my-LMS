@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@db/schema";
 import type { InsertUser } from "@db/schema";
-import { getDb } from './connection.ts';
+import { getDb } from "./connection";
 import { env } from "../lib/env";
 import { randomBytes, pbkdf2Sync, timingSafeEqual } from "crypto";
 
@@ -53,11 +53,11 @@ export async function createLocalUser(data: {
     role: "user" as const,
     lastSignInAt: new Date(),
   };
-  const result = await getDb()
+  const [row] = await getDb()
     .insert(schema.users)
     .values(values)
-    .$returningId();
-  return result[0]?.id;
+    .returning({ id: schema.users.id });
+  return row?.id;
 }
 
 export async function upsertUser(data: InsertUser) {
@@ -79,5 +79,5 @@ export async function upsertUser(data: InsertUser) {
   await getDb()
     .insert(schema.users)
     .values(values)
-    .onDuplicateKeyUpdate({ set: updateSet });
+    .onConflictDoUpdate({ target: schema.users.unionId, set: updateSet });
 }

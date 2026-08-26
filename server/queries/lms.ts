@@ -1,4 +1,4 @@
-import { getDb } from "./connection.js";
+import { getDb } from "./connection";
 import {
   courses,
   lessons,
@@ -9,7 +9,7 @@ import {
   quizAttempts,
   certificates,
   users,
-} from "../../db/schema.js";
+} from "@db/schema";
 import { and, desc, eq, like, or, sql, asc, inArray } from "drizzle-orm";
 
 // ---------- Courses ----------
@@ -86,7 +86,10 @@ export async function enroll(userId: number, courseId: number) {
   await db
     .insert(enrollments)
     .values({ userId, courseId })
-    .onDuplicateKeyUpdate({ set: { userId } });
+    .onConflictDoUpdate({
+      target: [enrollments.userId, enrollments.courseId],
+      set: { userId },
+    });
 }
 
 export async function isEnrolled(userId: number, courseId: number) {
@@ -206,7 +209,10 @@ export async function completeLesson(userId: number, lessonId: number, courseId:
   await db
     .insert(lessonProgress)
     .values({ userId, lessonId, courseId })
-    .onDuplicateKeyUpdate({ set: { userId } });
+    .onConflictDoUpdate({
+      target: [lessonProgress.userId, lessonProgress.lessonId],
+      set: { userId },
+    });
 }
 
 export async function uncompleteLesson(userId: number, lessonId: number) {
@@ -272,7 +278,10 @@ export async function submitQuiz(
     await db
       .insert(certificates)
       .values({ userId, courseId })
-      .onDuplicateKeyUpdate({ set: { userId } });
+      .onConflictDoUpdate({
+        target: [certificates.userId, certificates.courseId],
+        set: { userId },
+      });
     certificate = await db.query.certificates.findFirst({
       where: and(
         eq(certificates.userId, userId),
@@ -369,7 +378,7 @@ export async function createCourse(
   const [{ id }] = await db
     .insert(courses)
     .values({ ...data, instructorId })
-    .$returningId();
+    .returning({ id: courses.id });
   return id;
 }
 
@@ -480,7 +489,7 @@ export async function upsertLesson(
       durationMin: data.durationMin,
       orderIndex: data.orderIndex,
     })
-    .$returningId();
+    .returning({ id: lessons.id });
   return id;
 }
 
@@ -538,7 +547,7 @@ export async function saveQuiz(
         title: data.title,
         passScore: data.passScore,
       })
-      .$returningId();
+      .returning({ id: quizzes.id });
     quizId = id;
   }
   if (data.questions.length > 0) {
