@@ -117,12 +117,13 @@ export default function Landing() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "35%"]);
-  const glowOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.2]);
-  // "Zoom out" effect: hero content starts slightly enlarged/close, then
-  // scales down and settles as you scroll past it — like the camera pulling back.
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1.08, 0.92]);
-  const heroContentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "60%"]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  // "Zoom out" effect: hero starts large/close, then rapidly shrinks and
+  // fades within the first half of its pinned scroll range — like the
+  // camera pulling back fast — while the next section rises in behind it.
+  const heroScale = useTransform(scrollYProgress, [0, 0.55], [1.15, 0.75]);
+  const heroContentOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
 
   // Don't flash the landing page for a split second while we check auth.
   if (isLoading || user) {
@@ -133,20 +134,21 @@ export default function Landing() {
     <div className="min-h-screen bg-white">
       <LandingNav />
 
-      {/* ---------- Hero ---------- */}
-      <section ref={heroRef} className="relative overflow-hidden">
-        <motion.div
-          style={{ y: glowY, opacity: glowOpacity }}
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/25 via-sky-400/20 to-transparent blur-3xl" />
-          <div className="absolute top-40 right-[-120px] h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
-        </motion.div>
+      {/* ---------- Hero (tall + pinned so the zoom-out has room to play) ---------- */}
+      <section ref={heroRef} className="relative" style={{ height: "200vh" }}>
+        <div className="sticky top-0 h-screen overflow-hidden">
+          <motion.div
+            style={{ y: glowY, opacity: glowOpacity }}
+            className="pointer-events-none absolute inset-0"
+          >
+            <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/25 via-sky-400/20 to-transparent blur-3xl" />
+            <div className="absolute top-40 right-[-120px] h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
+          </motion.div>
 
-        <motion.div
-          style={{ scale: heroScale, opacity: heroContentOpacity }}
-          className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28"
-        >
+          <motion.div
+            style={{ scale: heroScale, opacity: heroContentOpacity }}
+            className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-4 sm:px-6"
+          >
           <div className="mx-auto max-w-3xl text-center">
             <Reveal>
               <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
@@ -211,12 +213,13 @@ export default function Landing() {
               ))}
             </div>
           </Reveal>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
       {/* ---------- Categories ---------- */}
       {categories && categories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+        <section className="relative z-10 mx-auto max-w-7xl bg-white px-4 pt-6 sm:px-6">
           <Reveal>
             <div className="flex flex-wrap justify-center gap-2">
               {categories.map((c) => (
@@ -234,7 +237,7 @@ export default function Landing() {
       )}
 
       {/* ---------- Featured courses ---------- */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      <section className="relative z-10 mx-auto max-w-7xl bg-white px-4 py-16 sm:px-6">
         <Reveal>
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold sm:text-3xl">Featured courses</h2>
