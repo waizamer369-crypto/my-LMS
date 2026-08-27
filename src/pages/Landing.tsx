@@ -119,6 +119,10 @@ export default function Landing() {
   });
   const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "35%"]);
   const glowOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.2]);
+  // "Zoom out" effect: hero content starts slightly enlarged/close, then
+  // scales down and settles as you scroll past it — like the camera pulling back.
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1.08, 0.92]);
+  const heroContentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   // Don't flash the landing page for a split second while we check auth.
   if (isLoading || user) {
@@ -139,7 +143,10 @@ export default function Landing() {
           <div className="absolute top-40 right-[-120px] h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
         </motion.div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
+        <motion.div
+          style={{ scale: heroScale, opacity: heroContentOpacity }}
+          className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28"
+        >
           <div className="mx-auto max-w-3xl text-center">
             <Reveal>
               <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
@@ -204,7 +211,7 @@ export default function Landing() {
               ))}
             </div>
           </Reveal>
-        </div>
+        </motion.div>
       </section>
 
       {/* ---------- Categories ---------- */}
