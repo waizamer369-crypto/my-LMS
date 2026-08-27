@@ -1,13 +1,76 @@
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, Award, BookOpen, Users, Sparkles, Play, TrendingUp, Clock } from "lucide-react";
+import { ArrowRight, Award, BookOpen, Users, Sparkles, TrendingUp, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/Layout";
 import CourseCard from "@/components/CourseCard";
 import { trpc } from "@/providers/trpc";
-import { motion } from "framer-motion";
-import { FadeIn, StaggerContainer, StaggerItem, AnimatedCounter } from "@/lib/animations";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
+import { AnimatedCounter } from "@/lib/animations";
+
+/* ---------- Scroll-reveal primitives ---------- */
+/* These trigger when the element enters the viewport while scrolling,
+   not just once on page mount — that's the mechanic behind the
+   "reveal as you scroll" feel we're going for. */
+
+function Reveal({
+  children,
+  delay = 0,
+  y = 28,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  y?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function RevealStagger({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={{
+        hidden: {},
+        show: { transition: { staggerChildren: 0.1 } },
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function RevealItem({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 24 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] } },
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -17,51 +80,79 @@ export default function Home() {
 
   const featured = courses?.slice(0, 6) ?? [];
 
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  // Parallax: the background glow drifts and fades as you scroll past the hero
+  const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "35%"]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.2]);
+
   return (
     <Layout>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/8 via-background to-background" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-          <FadeIn>
-            <Badge variant="secondary" className="mb-4">
-              <Sparkles className="mr-1 h-3 w-3" /> New courses added weekly
-            </Badge>
-          </FadeIn>
-          <FadeIn delay={0.1}>
-            <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              Learn skills that
-              <span className="text-primary"> move your career</span> forward
-            </h1>
-          </FadeIn>
-          <FadeIn delay={0.2}>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              Hands-on courses taught by practitioners. Track your progress, pass
-              quizzes, and earn certificates that prove what you know.
-            </p>
-          </FadeIn>
-          <FadeIn delay={0.3}>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => navigate("/courses")}>
-                Browse courses <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/teach")}>
-                Become an instructor
-              </Button>
-            </div>
-          </FadeIn>
+      {/* ---------- Hero ---------- */}
+      <section ref={heroRef} className="relative overflow-hidden">
+        <motion.div
+          style={{ y: glowY, opacity: glowOpacity }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/25 via-sky-400/20 to-transparent blur-3xl" />
+          <div className="absolute top-40 right-[-120px] h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
+        </motion.div>
+
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <Reveal>
+              <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
+                <Sparkles className="mr-1 h-3 w-3" /> New courses added weekly
+              </Badge>
+            </Reveal>
+
+            <Reveal delay={0.08}>
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+                Learn skills that
+                <span className="bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
+                  {" "}move your career{" "}
+                </span>
+                forward
+              </h1>
+            </Reveal>
+
+            <Reveal delay={0.16}>
+              <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+                Hands-on courses taught by practitioners. Track your progress, pass
+                quizzes, and earn certificates that prove what you know.
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.24}>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-indigo-600 to-sky-500 hover:opacity-90"
+                  onClick={() => navigate("/signup")}
+                >
+                  Create free account <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
+                  Sign in
+                </Button>
+              </div>
+            </Reveal>
+          </div>
 
           {/* Stats */}
-          <FadeIn delay={0.4}>
-            <div className="mt-12 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-8">
+          <Reveal delay={0.3}>
+            <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
               {[
                 { icon: BookOpen, value: stats?.courses ?? 0, label: "Courses" },
                 { icon: Users, value: stats?.learners ?? 0, label: "Learners" },
                 { icon: Award, value: stats?.certificates ?? 0, label: "Certificates" },
               ].map((s) => (
-                <Card key={s.label} className="border-0 bg-primary/5 shadow-none">
+                <Card key={s.label} className="border-0 bg-gradient-to-br from-indigo-50 to-sky-50 shadow-none">
                   <CardContent className="flex items-center gap-3 p-4">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
                       <s.icon className="h-5 w-5" />
                     </span>
                     <div>
@@ -74,33 +165,33 @@ export default function Home() {
                 </Card>
               ))}
             </div>
-          </FadeIn>
+          </Reveal>
         </div>
       </section>
 
-      {/* Categories */}
+      {/* ---------- Categories ---------- */}
       {categories && categories.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
-          <FadeIn>
-            <div className="flex flex-wrap gap-2">
+          <Reveal>
+            <div className="flex flex-wrap justify-center gap-2">
               {categories.map((c) => (
                 <Link key={c} to={`/courses?category=${encodeURIComponent(c)}`}>
                   <Badge
                     variant="outline"
-                    className="cursor-pointer px-4 py-1.5 text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="cursor-pointer px-4 py-1.5 text-sm transition-colors hover:bg-indigo-600 hover:text-white"
                   >
                     {c}
                   </Badge>
                 </Link>
               ))}
             </div>
-          </FadeIn>
+          </Reveal>
         </section>
       )}
 
-      {/* Featured */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <FadeIn>
+      {/* ---------- Featured courses ---------- */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <Reveal>
           <div className="mb-8 flex items-end justify-between">
             <div>
               <h2 className="text-2xl font-bold sm:text-3xl">Featured courses</h2>
@@ -110,7 +201,8 @@ export default function Home() {
               View all <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
-        </FadeIn>
+        </Reveal>
+
         {isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -118,67 +210,84 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <StaggerContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealStagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((c) => (
-              <StaggerItem key={c.id}>
+              <RevealItem key={c.id}>
                 <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
                   <CourseCard course={c} />
                 </motion.div>
-              </StaggerItem>
+              </RevealItem>
             ))}
-          </StaggerContainer>
+          </RevealStagger>
         )}
       </section>
 
-      {/* How it works */}
-      <section className="border-t bg-muted/30">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-          <FadeIn>
+      {/* ---------- How it works (a real sequence, so numbering earns its place) ---------- */}
+      <section className="relative overflow-hidden border-t bg-gradient-to-b from-indigo-50/60 via-sky-50/40 to-transparent">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+          <Reveal>
             <h2 className="text-center text-2xl font-bold sm:text-3xl">How LearnHub works</h2>
-          </FadeIn>
-          <StaggerContainer className="mt-10 grid gap-6 sm:grid-cols-3">
+          </Reveal>
+
+          <RevealStagger className="mt-12 grid gap-6 sm:grid-cols-3">
             {[
-              { icon: BookOpen, title: "Enroll & learn", text: "Pick a course and work through bite-size lessons at your own pace." },
-              { icon: TrendingUp, title: "Prove it with quizzes", text: "Complete every lesson to unlock the final quiz and test your knowledge." },
-              { icon: Award, title: "Earn a certificate", text: "Pass the quiz and get a shareable certificate of completion instantly." },
+              { icon: BookOpen, step: "01", title: "Enroll & learn", text: "Pick a course and work through bite-size lessons at your own pace." },
+              { icon: TrendingUp, step: "02", title: "Prove it with quizzes", text: "Complete every lesson to unlock the final quiz and test your knowledge." },
+              { icon: Award, step: "03", title: "Earn a certificate", text: "Pass the quiz and get a shareable certificate of completion instantly." },
             ].map((s) => (
-              <StaggerItem key={s.title}>
-                <motion.div whileHover={{ y: -4 }} className="rounded-2xl border bg-card p-6 transition-shadow hover:shadow-md">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <RevealItem key={s.title}>
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className="relative overflow-hidden rounded-2xl border bg-card p-6 transition-shadow hover:shadow-lg"
+                >
+                  <span className="absolute right-4 top-3 font-mono text-4xl font-bold text-indigo-50 select-none">
+                    {s.step}
+                  </span>
+                  <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 text-white">
                     <s.icon className="h-5 w-5" />
                   </span>
-                  <h3 className="mt-4 font-semibold">{s.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
+                  <h3 className="relative mt-4 font-semibold">{s.title}</h3>
+                  <p className="relative mt-2 text-sm text-muted-foreground">{s.text}</p>
                 </motion.div>
-              </StaggerItem>
+              </RevealItem>
             ))}
-          </StaggerContainer>
+          </RevealStagger>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <FadeIn>
+      {/* ---------- CTA ---------- */}
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+        <Reveal>
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/80 px-8 py-14 text-center text-primary-foreground sm:px-16"
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-sky-500 px-8 py-16 text-center text-white sm:px-16"
           >
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-sky-300/20 blur-2xl" />
             <div className="relative z-10">
+              <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
+                <GraduationCap className="h-6 w-6" />
+              </div>
               <h2 className="text-2xl font-bold sm:text-3xl">Ready to start learning?</h2>
-              <p className="mx-auto mt-3 max-w-lg text-primary-foreground/80">
+              <p className="mx-auto mt-3 max-w-lg text-white/85">
                 Join thousands of learners and start building skills that matter today.
               </p>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="mt-6"
-                onClick={() => navigate("/courses")}
-              >
-                Explore all courses <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                <Button size="lg" variant="secondary" onClick={() => navigate("/signup")}>
+                  Create free account <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                  onClick={() => navigate("/login")}
+                >
+                  Sign in
+                </Button>
+              </div>
             </div>
           </motion.div>
-        </FadeIn>
+        </Reveal>
       </section>
     </Layout>
   );
