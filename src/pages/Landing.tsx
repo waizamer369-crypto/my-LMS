@@ -117,13 +117,24 @@ export default function Landing() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const glowY = useTransform(scrollYProgress, [0, 1], ["0%", "60%"]);
-  const glowOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-  // "Zoom out" effect: hero starts large/close, then rapidly shrinks and
-  // fades within the first half of its pinned scroll range — like the
-  // camera pulling back fast — while the next section rises in behind it.
-  const heroScale = useTransform(scrollYProgress, [0, 0.55], [1.15, 0.75]);
-  const heroContentOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+
+  // Opening text (badge/h1/p/buttons) fades out early as the scroll begins.
+  const openTextOpacity = useTransform(scrollYProgress, [0, 0.22], [1, 0]);
+  const openTextY = useTransform(scrollYProgress, [0, 0.3], [0, -40]);
+
+  // The big mockup shrinks from full-bleed/centered down into a small
+  // framed card, and slides to the right as it shrinks.
+  const artScale = useTransform(scrollYProgress, [0.05, 0.62], [1.25, 0.62]);
+  const artX = useTransform(scrollYProgress, [0.05, 0.62], ["0%", "26%"]);
+  const artY = useTransform(scrollYProgress, [0.05, 0.62], ["0%", "2%"]);
+  const artRadius = useTransform(scrollYProgress, [0.05, 0.62], [0, 24]);
+
+  // New copy fades in on the left, timed to land once the mockup has
+  // mostly finished shrinking into place.
+  const featureTextOpacity = useTransform(scrollYProgress, [0.42, 0.68], [0, 1]);
+  const featureTextX = useTransform(scrollYProgress, [0.42, 0.68], [-30, 0]);
+
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0.3]);
 
   // Don't flash the landing page for a split second while we check auth.
   if (isLoading || user) {
@@ -134,87 +145,143 @@ export default function Landing() {
     <div className="min-h-screen bg-white">
       <LandingNav />
 
-      {/* ---------- Hero (tall + pinned so the zoom-out has room to play) ---------- */}
-      <section ref={heroRef} className="relative" style={{ height: "200vh" }}>
+      {/* ---------- Hero → feature morph (pinned for a long scroll range) ---------- */}
+      <section ref={heroRef} className="relative bg-gradient-to-b from-sky-50 via-white to-white" style={{ height: "260vh" }}>
         <div className="sticky top-0 h-screen overflow-hidden">
           <motion.div
-            style={{ y: glowY, opacity: glowOpacity }}
+            style={{ opacity: glowOpacity }}
             className="pointer-events-none absolute inset-0"
           >
-            <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/25 via-sky-400/20 to-transparent blur-3xl" />
-            <div className="absolute top-40 right-[-120px] h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
+            <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/20 via-sky-400/20 to-transparent blur-3xl" />
           </motion.div>
 
+          {/* Opening headline, centered, fades out first */}
           <motion.div
-            style={{ scale: heroScale, opacity: heroContentOpacity }}
-            className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-4 sm:px-6"
+            style={{ opacity: openTextOpacity, y: openTextY }}
+            className="pointer-events-none absolute inset-x-0 top-[8%] z-10 mx-auto max-w-3xl px-4 text-center sm:px-6"
           >
-          <div className="mx-auto max-w-3xl text-center">
-            <Reveal>
-              <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
-                <Sparkles className="mr-1 h-3 w-3" /> New courses added weekly
-              </Badge>
-            </Reveal>
-
-            <Reveal delay={0.08}>
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-                Learn skills that
-                <span className="bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
-                  {" "}move your career{" "}
-                </span>
-                forward
-              </h1>
-            </Reveal>
-
-            <Reveal delay={0.16}>
-              <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-                Hands-on courses taught by practitioners. Track your progress, pass
-                quizzes, and earn certificates that prove what you know.
-              </p>
-            </Reveal>
-
-            <Reveal delay={0.24}>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-indigo-600 to-sky-500 hover:opacity-90"
-                  onClick={() => navigate("/signup")}
-                >
-                  Create free account <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
-                  Sign in
-                </Button>
-              </div>
-            </Reveal>
-          </div>
-
-          {/* Stats */}
-          <Reveal delay={0.3}>
-            <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
-              {[
-                { icon: BookOpen, value: stats?.courses ?? 0, label: "Courses" },
-                { icon: Users, value: stats?.learners ?? 0, label: "Learners" },
-                { icon: Award, value: stats?.certificates ?? 0, label: "Certificates" },
-              ].map((s) => (
-                <Card key={s.label} className="border-0 bg-gradient-to-br from-indigo-50 to-sky-50 shadow-none">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
-                      <s.icon className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="text-2xl font-bold">
-                        <AnimatedCounter value={s.value} />
-                      </p>
-                      <p className="text-sm text-muted-foreground">{s.label}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
+              <Sparkles className="mr-1 h-3 w-3" /> New courses added weekly
+            </Badge>
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+              Learn skills that
+              <span className="bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
+                {" "}move your career{" "}
+              </span>
+              forward
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+              Hands-on courses taught by practitioners. Track your progress, pass
+              quizzes, and earn certificates that prove what you know.
+            </p>
+            <div className="pointer-events-auto mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-indigo-600 to-sky-500 hover:opacity-90"
+                onClick={() => navigate("/signup")}
+              >
+                Create free account <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
+                Sign in
+              </Button>
             </div>
-          </Reveal>
+          </motion.div>
+
+          {/* Incoming feature copy, left-aligned, fades in as the mockup shrinks */}
+          <motion.div
+            style={{ opacity: featureTextOpacity, x: featureTextX }}
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-full max-w-xl flex-col justify-center px-6 sm:px-12 lg:px-20"
+          >
+            <Badge variant="outline" className="mb-4 w-fit border-indigo-200 text-indigo-600">
+              Built for progress
+            </Badge>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              See every course, quiz, and certificate in one place
+            </h2>
+            <p className="mt-4 max-w-md text-muted-foreground">
+              Your dashboard tracks lessons completed, quizzes passed, and
+              certificates earned — so you always know exactly where you left off.
+            </p>
+          </motion.div>
+
+          {/* The morphing mockup: starts full-bleed, shrinks into a framed card on the right */}
+          <motion.div
+            style={{ scale: artScale, x: artX, y: artY, borderRadius: artRadius }}
+            className="absolute inset-0 m-auto h-[70vh] w-[92vw] max-w-5xl overflow-hidden border border-black/5 bg-white shadow-2xl sm:h-[75vh]"
+          >
+            <div className="flex h-9 items-center gap-1.5 border-b bg-muted/40 px-4">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+            </div>
+            <div className="grid h-[calc(100%-2.25rem)] grid-cols-[220px_1fr]">
+              <div className="hidden flex-col gap-2 border-r bg-muted/20 p-4 sm:flex">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
+                    <GraduationCap className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-bold">LearnHub</span>
+                </div>
+                {["Home", "Courses", "My Learning", "Certificates"].map((label, i) => (
+                  <div
+                    key={label}
+                    className={`rounded-lg px-3 py-2 text-sm ${i === 2 ? "bg-indigo-600/10 font-medium text-indigo-700" : "text-muted-foreground"}`}
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-4 overflow-hidden p-6">
+                <div className="h-6 w-1/3 rounded bg-gradient-to-r from-indigo-100 to-sky-100" />
+                <div className="grid grid-cols-3 gap-4">
+                  {[62, 100, 30].map((v, i) => (
+                    <div key={i} className="rounded-xl border bg-card p-4">
+                      <div className="mb-3 h-3 w-2/3 rounded bg-muted" />
+                      <div className="h-2 w-full rounded-full bg-muted">
+                        <div
+                          className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-sky-400"
+                          style={{ width: `${v}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="h-28 rounded-xl bg-gradient-to-br from-indigo-50 to-sky-50" />
+                  <div className="h-28 rounded-xl bg-gradient-to-br from-sky-50 to-indigo-50" />
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
+      </section>
+
+      {/* ---------- Stats (own section right after the pinned hero) ---------- */}
+      <section className="relative z-10 mx-auto max-w-7xl bg-white px-4 py-10 sm:px-6">
+        <Reveal>
+          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
+            {[
+              { icon: BookOpen, value: stats?.courses ?? 0, label: "Courses" },
+              { icon: Users, value: stats?.learners ?? 0, label: "Learners" },
+              { icon: Award, value: stats?.certificates ?? 0, label: "Certificates" },
+            ].map((s) => (
+              <Card key={s.label} className="border-0 bg-gradient-to-br from-indigo-50 to-sky-50 shadow-none">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                    <s.icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold">
+                      <AnimatedCounter value={s.value} />
+                    </p>
+                    <p className="text-sm text-muted-foreground">{s.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </Reveal>
       </section>
 
       {/* ---------- Categories ---------- */}
