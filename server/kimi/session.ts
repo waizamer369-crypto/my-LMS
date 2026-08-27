@@ -23,7 +23,7 @@ export async function verifySessionToken(
     return null;
   }
   try {
-    const secret = new TextEncoder().encode(env.appSecret ?? "");
+    const secret = new TextEncoder().encode(env.sessionSecret);
     const { payload } = await jose.jwtVerify(token, secret, {
       algorithms: [JWT_ALG],
     });
