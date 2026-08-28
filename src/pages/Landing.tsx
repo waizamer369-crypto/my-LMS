@@ -118,21 +118,23 @@ export default function Landing() {
     offset: ["start start", "end start"],
   });
 
-  // Opening text (badge/h1/p/buttons) fades out early as the scroll begins.
-  const openTextOpacity = useTransform(scrollYProgress, [0, 0.22], [1, 0]);
-  const openTextY = useTransform(scrollYProgress, [0, 0.3], [0, -40]);
+  // Sequence: (1) headline fully fades out, THEN (2) mockup pops in centered,
+  // THEN (3) mockup shrinks + slides right while new copy fades in beside it.
+  // Each phase finishes before the next starts — no overlapping cross-fade.
+  const openTextOpacity = useTransform(scrollYProgress, [0, 0.16], [1, 0]);
+  const openTextY = useTransform(scrollYProgress, [0, 0.2], [0, -30]);
 
-  // The big mockup shrinks from full-bleed/centered down into a small
-  // framed card, and slides to the right as it shrinks.
-  const artScale = useTransform(scrollYProgress, [0.05, 0.62], [1.25, 0.62]);
-  const artX = useTransform(scrollYProgress, [0.05, 0.62], ["0%", "26%"]);
-  const artY = useTransform(scrollYProgress, [0.05, 0.62], ["0%", "2%"]);
-  const artRadius = useTransform(scrollYProgress, [0.05, 0.62], [0, 24]);
+  const artOpacity = useTransform(scrollYProgress, [0.16, 0.28], [0, 1]);
+  // Smaller scale delta (0.92 -> 1 -> 0.8) so it settles instead of receding into depth.
+  const artScale = useTransform(scrollYProgress, [0.16, 0.3, 0.78], [0.92, 1, 0.8]);
+  const artX = useTransform(scrollYProgress, [0.3, 0.78], ["0%", "26%"]);
+  // Real downward travel — the box visibly descends and docks, instead of just
+  // scaling down in place (which is what read as "moving back").
+  const artY = useTransform(scrollYProgress, [0.3, 0.78], ["0%", "16%"]);
+  const artRadius = useTransform(scrollYProgress, [0.3, 0.78], [0, 24]);
 
-  // New copy fades in on the left, timed to land once the mockup has
-  // mostly finished shrinking into place.
-  const featureTextOpacity = useTransform(scrollYProgress, [0.42, 0.68], [0, 1]);
-  const featureTextX = useTransform(scrollYProgress, [0.42, 0.68], [-30, 0]);
+  const featureTextOpacity = useTransform(scrollYProgress, [0.55, 0.82], [0, 1]);
+  const featureTextX = useTransform(scrollYProgress, [0.55, 0.82], [-30, 0]);
 
   const glowOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0.3]);
 
@@ -146,7 +148,7 @@ export default function Landing() {
       <LandingNav />
 
       {/* ---------- Hero → feature morph (pinned for a long scroll range) ---------- */}
-      <section ref={heroRef} className="relative bg-gradient-to-b from-sky-50 via-white to-white" style={{ height: "260vh" }}>
+      <section ref={heroRef} className="relative bg-gradient-to-b from-sky-50 via-white to-white" style={{ height: "190vh" }}>
         <div className="sticky top-0 h-screen overflow-hidden">
           <motion.div
             style={{ opacity: glowOpacity }}
@@ -205,32 +207,27 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          {/* The morphing mockup: starts full-bleed, shrinks into a framed card on the right */}
+          {/* The morphing mockup: hidden at top, fades/grows in, then shrinks into a framed card on the right */}
           <motion.div
-            style={{ scale: artScale, x: artX, y: artY, borderRadius: artRadius }}
-            className="absolute inset-0 m-auto h-[70vh] w-[92vw] max-w-5xl overflow-hidden border border-black/5 bg-white shadow-2xl sm:h-[75vh]"
+            style={{ opacity: artOpacity, scale: artScale, x: artX, y: artY, borderRadius: artRadius }}
+            className="absolute inset-0 m-auto h-[70vh] w-[92vw] max-w-5xl overflow-hidden border-2 border-indigo-100 bg-white shadow-[0_30px_80px_-20px_rgba(79,70,229,0.35)] sm:h-[75vh]"
           >
             <div className="flex h-9 items-center gap-1.5 border-b bg-muted/40 px-4">
               <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
               <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
             </div>
-            <div className="grid h-[calc(100%-2.25rem)] grid-cols-[220px_1fr]">
-              <div className="hidden flex-col gap-2 border-r bg-muted/20 p-4 sm:flex">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
-                    <GraduationCap className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm font-bold">LearnHub</span>
+            <div className="grid h-[calc(100%-2.25rem)] grid-cols-[200px_1fr]">
+              <div className="hidden flex-col gap-3 border-r bg-gradient-to-b from-indigo-50/60 to-sky-50/40 p-5 sm:flex">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
+                  <GraduationCap className="h-4 w-4" />
                 </div>
-                {["Home", "Courses", "My Learning", "Certificates"].map((label, i) => (
-                  <div
-                    key={label}
-                    className={`rounded-lg px-3 py-2 text-sm ${i === 2 ? "bg-indigo-600/10 font-medium text-indigo-700" : "text-muted-foreground"}`}
-                  >
-                    {label}
-                  </div>
-                ))}
+                <div className="mt-2 space-y-2.5">
+                  <div className="h-2.5 w-4/5 rounded-full bg-indigo-200/70" />
+                  <div className="h-2.5 w-3/5 rounded-full bg-muted" />
+                  <div className="h-2.5 w-full rounded-full bg-muted" />
+                  <div className="h-2.5 w-2/3 rounded-full bg-muted" />
+                </div>
               </div>
               <div className="space-y-4 overflow-hidden p-6">
                 <div className="h-6 w-1/3 rounded bg-gradient-to-r from-indigo-100 to-sky-100" />
@@ -259,29 +256,37 @@ export default function Landing() {
 
       {/* ---------- Stats (own section right after the pinned hero) ---------- */}
       <section className="relative z-10 mx-auto max-w-7xl bg-white px-4 py-10 sm:px-6">
-        <Reveal>
-          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
-            {[
-              { icon: BookOpen, value: stats?.courses ?? 0, label: "Courses" },
-              { icon: Users, value: stats?.learners ?? 0, label: "Learners" },
-              { icon: Award, value: stats?.certificates ?? 0, label: "Certificates" },
-            ].map((s) => (
-              <Card key={s.label} className="border-0 bg-gradient-to-br from-indigo-50 to-sky-50 shadow-none">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
-                    <s.icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-2xl font-bold">
-                      <AnimatedCounter value={s.value} />
-                    </p>
-                    <p className="text-sm text-muted-foreground">{s.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </Reveal>
+        <RevealStagger className="mx-auto grid max-w-3xl grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
+          {[
+            { icon: BookOpen, value: stats?.courses ?? 0, label: "Courses" },
+            { icon: Users, value: stats?.learners ?? 0, label: "Learners" },
+            { icon: Award, value: stats?.certificates ?? 0, label: "Certificates" },
+          ].map((s) => (
+            <RevealItem key={s.label}>
+              <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
+                <Card className="border-0 bg-gradient-to-br from-indigo-50 to-sky-50 shadow-none">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <motion.span
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={{ once: true, margin: "-80px" }}
+                      transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm"
+                    >
+                      <s.icon className="h-5 w-5" />
+                    </motion.span>
+                    <div>
+                      <p className="text-2xl font-bold">
+                        <AnimatedCounter value={s.value} />
+                      </p>
+                      <p className="text-sm text-muted-foreground">{s.label}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </RevealItem>
+          ))}
+        </RevealStagger>
       </section>
 
       {/* ---------- Categories ---------- */}
