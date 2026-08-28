@@ -118,25 +118,38 @@ export default function Landing() {
     offset: ["start start", "end start"],
   });
 
-  // Sequence: (1) headline fully fades out, THEN (2) mockup pops in centered,
-  // THEN (3) mockup shrinks + slides right while new copy fades in beside it.
-  // Each phase finishes before the next starts — no overlapping cross-fade.
-  const openTextOpacity = useTransform(scrollYProgress, [0, 0.16], [1, 0]);
-  const openTextY = useTransform(scrollYProgress, [0, 0.2], [0, -30]);
+  // ZOOM-OUT CONCEPT: the mockup starts large/close (like the camera is zoomed
+  // in), then continuously scales down and drifts downward as you scroll —
+  // one continuous "pull back and scroll down" motion, not a pop-then-shrink.
+  // Text arrives in staggered stages tied to that same progress. The stats
+  // section only starts entering once this settle is basically done (~0.85+).
+  // Header block: shrinks continuously as you scroll, capped at a floor
+  // (0.55) so it never gets illegibly tiny — it just settles small. Stays
+  // fully opaque while shrinking, only fading out right at the tail end.
+  const openTextScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.55]);
+  const openTextOpacity = useTransform(scrollYProgress, [0.24, 0.34], [1, 0]);
+  const openTextY = useTransform(scrollYProgress, [0, 0.3], [0, -20]);
 
-  const artOpacity = useTransform(scrollYProgress, [0.16, 0.28], [0, 1]);
-  // Smaller scale delta (0.92 -> 1 -> 0.8) so it settles instead of receding into depth.
-  const artScale = useTransform(scrollYProgress, [0.16, 0.3, 0.78], [0.92, 1, 0.8]);
-  const artX = useTransform(scrollYProgress, [0.3, 0.78], ["0%", "26%"]);
-  // Real downward travel — the box visibly descends and docks, instead of just
-  // scaling down in place (which is what read as "moving back").
-  const artY = useTransform(scrollYProgress, [0.3, 0.78], ["0%", "16%"]);
-  const artRadius = useTransform(scrollYProgress, [0.3, 0.78], [0, 24]);
+  // Mockup zoom-out + side text now pick up right after the header finishes
+  // shrinking (~0.3) instead of overlapping with it.
+  const artOpacity = useTransform(scrollYProgress, [0.28, 0.4], [0, 1]);
+  // Starts big & close (1.35 = zoomed in), continuously pulls back to 0.8.
+  const artScale = useTransform(scrollYProgress, [0.3, 0.85], [1.35, 0.8]);
+  const artX = useTransform(scrollYProgress, [0.5, 0.85], ["0%", "26%"]);
+  // Continuous downward drift across the *entire* zoom-out — sells
+  // "scrolling down" alongside "zooming out".
+  const artY = useTransform(scrollYProgress, [0.3, 0.85], ["-8%", "18%"]);
+  const artRadius = useTransform(scrollYProgress, [0.5, 0.85], [0, 24]);
 
-  // Starts as soon as the mockup begins sliding right (0.3), not after it's
-  // already mostly docked — removes the empty gap with nothing beside the box.
-  const featureTextOpacity = useTransform(scrollYProgress, [0.32, 0.55], [0, 1]);
-  const featureTextX = useTransform(scrollYProgress, [0.32, 0.55], [-30, 0]);
+  // Feature copy arrives in three staggered beats as the mockup docks —
+  // badge first, then heading, then paragraph.
+  const featureBadgeOpacity = useTransform(scrollYProgress, [0.55, 0.65], [0, 1]);
+  const featureBadgeX = useTransform(scrollYProgress, [0.55, 0.65], [-24, 0]);
+  const featureHeadingOpacity = useTransform(scrollYProgress, [0.62, 0.74], [0, 1]);
+  const featureHeadingX = useTransform(scrollYProgress, [0.62, 0.74], [-24, 0]);
+  const featureParaOpacity = useTransform(scrollYProgress, [0.69, 0.81], [0, 1]);
+  const featureParaX = useTransform(scrollYProgress, [0.69, 0.81], [-24, 0]);
+
 
   const glowOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0.3]);
 
@@ -161,7 +174,7 @@ export default function Landing() {
 
           {/* Opening headline, centered, fades out first */}
           <motion.div
-            style={{ opacity: openTextOpacity, y: openTextY }}
+            style={{ opacity: openTextOpacity, y: openTextY, scale: openTextScale }}
             className="pointer-events-none absolute inset-x-0 top-[8%] z-10 mx-auto max-w-3xl px-4 text-center sm:px-6"
           >
             <Badge variant="secondary" className="mb-5 border-sky-200 bg-sky-50 text-sky-700">
@@ -192,22 +205,29 @@ export default function Landing() {
             </div>
           </motion.div>
 
-          {/* Incoming feature copy, left-aligned, fades in as the mockup shrinks */}
-          <motion.div
-            style={{ opacity: featureTextOpacity, x: featureTextX }}
+          {/* Incoming feature copy — arrives in three staggered beats as the zoom-out settles */}
+          <div
             className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-full max-w-xl flex-col justify-center px-6 sm:px-12 lg:px-20"
           >
-            <Badge variant="outline" className="mb-4 w-fit border-indigo-200 text-indigo-600">
-              Built for progress
-            </Badge>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <motion.div style={{ opacity: featureBadgeOpacity, x: featureBadgeX }}>
+              <Badge variant="outline" className="mb-4 w-fit border-indigo-200 text-indigo-600">
+                Built for progress
+              </Badge>
+            </motion.div>
+            <motion.h2
+              style={{ opacity: featureHeadingOpacity, x: featureHeadingX }}
+              className="text-3xl font-bold tracking-tight sm:text-4xl"
+            >
               See every course, quiz, and certificate in one place
-            </h2>
-            <p className="mt-4 max-w-md text-muted-foreground">
+            </motion.h2>
+            <motion.p
+              style={{ opacity: featureParaOpacity, x: featureParaX }}
+              className="mt-4 max-w-md text-muted-foreground"
+            >
               Your dashboard tracks lessons completed, quizzes passed, and
               certificates earned — so you always know exactly where you left off.
-            </p>
-          </motion.div>
+            </motion.p>
+          </div>
 
           {/* The morphing mockup: hidden at top, fades/grows in, then shrinks into a framed card on the right */}
           <motion.div
