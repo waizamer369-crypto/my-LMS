@@ -133,8 +133,10 @@ export default function Landing() {
   const artY = useTransform(scrollYProgress, [0.3, 0.78], ["0%", "16%"]);
   const artRadius = useTransform(scrollYProgress, [0.3, 0.78], [0, 24]);
 
-  const featureTextOpacity = useTransform(scrollYProgress, [0.55, 0.82], [0, 1]);
-  const featureTextX = useTransform(scrollYProgress, [0.55, 0.82], [-30, 0]);
+  // Starts as soon as the mockup begins sliding right (0.3), not after it's
+  // already mostly docked — removes the empty gap with nothing beside the box.
+  const featureTextOpacity = useTransform(scrollYProgress, [0.32, 0.55], [0, 1]);
+  const featureTextX = useTransform(scrollYProgress, [0.32, 0.55], [-30, 0]);
 
   const glowOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0.3]);
 
@@ -212,25 +214,25 @@ export default function Landing() {
             style={{ opacity: artOpacity, scale: artScale, x: artX, y: artY, borderRadius: artRadius }}
             className="absolute inset-0 m-auto h-[70vh] w-[92vw] max-w-5xl overflow-hidden border-2 border-indigo-100 bg-white shadow-[0_30px_80px_-20px_rgba(79,70,229,0.35)] sm:h-[75vh]"
           >
-            <div className="flex h-9 items-center gap-1.5 border-b bg-muted/40 px-4">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+            <div className="flex h-9 items-center gap-1.5 border-b bg-slate-100 px-4">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
             </div>
             <div className="grid h-[calc(100%-2.25rem)] grid-cols-[200px_1fr]">
-              <div className="hidden flex-col gap-3 border-r bg-gradient-to-b from-indigo-50/60 to-sky-50/40 p-5 sm:flex">
+              <div className="hidden flex-col gap-3 border-r bg-gradient-to-b from-indigo-100 to-sky-100 p-5 sm:flex">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
                   <GraduationCap className="h-4 w-4" />
                 </div>
                 <div className="mt-2 space-y-2.5">
-                  <div className="h-2.5 w-4/5 rounded-full bg-indigo-200/70" />
-                  <div className="h-2.5 w-3/5 rounded-full bg-muted" />
-                  <div className="h-2.5 w-full rounded-full bg-muted" />
-                  <div className="h-2.5 w-2/3 rounded-full bg-muted" />
+                  <div className="h-2.5 w-4/5 rounded-full bg-indigo-400/70" />
+                  <div className="h-2.5 w-3/5 rounded-full bg-slate-300" />
+                  <div className="h-2.5 w-full rounded-full bg-slate-300" />
+                  <div className="h-2.5 w-2/3 rounded-full bg-slate-300" />
                 </div>
               </div>
               <div className="space-y-4 overflow-hidden p-6">
-                <div className="h-6 w-1/3 rounded bg-gradient-to-r from-indigo-100 to-sky-100" />
+                <div className="h-6 w-1/3 rounded bg-gradient-to-r from-indigo-200 to-sky-200" />
                 <div className="grid grid-cols-3 gap-4">
                   {[62, 100, 30].map((v, i) => (
                     <div key={i} className="rounded-xl border bg-card p-4">
