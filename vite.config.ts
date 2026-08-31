@@ -13,13 +13,13 @@ export default defineConfig({
     inspectAttr(), react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico"],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
         name: "LearnHub",
         short_name: "LearnHub",
-        description: "Hands-on courses, quizzes, and certificates.",
-        theme_color: "#4f46e5",
-        background_color: "#ffffff",
+        description: "Community development with skills and education.",
+        theme_color: "#25326a",
+        background_color: "#f7f7f7",
         display: "standalone",
         start_url: "/",
         icons: [
