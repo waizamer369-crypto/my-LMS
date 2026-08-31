@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
-        name: "LearnHub",
-        short_name: "LearnHub",
+        name: "Voice of Eden Pakistan",
+        short_name: "Voice of Eden",
         description: "Community development with skills and education.",
         theme_color: "#25326a",
         background_color: "#f7f7f7",
